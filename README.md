@@ -1,0 +1,4 @@
+shexp
+=====
+
+Spherical Harmonic Exponentiation
