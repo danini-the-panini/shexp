@@ -1,0 +1,28 @@
+block(
+
+L(i) := floor(sqrt(i)),
+M(i) := i-L(i)-L(i)^2,
+
+Y(i,theta,phi) := spherical_harmonic(L(i),M(i),theta,phi),
+
+gam(i,j,k) := 
+    integrate(
+        integrate(
+            Y(i,theta,phi)* Y(j,theta,phi) * Y(k,theta,phi)
+                *sin(theta),
+        theta,0,%pi),
+    phi,0,2*%pi),
+
+triples(n) := block(
+    arr: [],
+    for i: 0 while i < n^2 do
+        for j: 0 while j < n^2 do
+            for k: 0 while k < n^2 do block(
+                temp: float(gam(i,j,k)),
+                if notequal(temp,0) then
+                    arr: cons([i,j,k,temp],arr)),
+    arr),
+
+triples(3)
+
+);

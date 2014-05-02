@@ -45,5 +45,5 @@ tar:
 
 # Calculate dependencies based on output from gcc -MM.
 makefile.dep: *.[Ch]
-	for i in *.C; do gcc -MM "$${i}"; done > $@
+	for i in *.C; do gcc ${CFLAGS} -MM "$${i}"; done > $@
 include makefile.dep

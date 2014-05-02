@@ -1,0 +1,86 @@
+/* [wxMaxima batch file version 1] [ DO NOT EDIT BY HAND! ]*/
+/* [ Created with wxMaxima version 13.04.2 ] */
+
+/* [wxMaxima: title   start ]
+Spherical Harmonics
+   [wxMaxima: title   end   ] */
+
+/* [wxMaxima: comment start ]
+L(i) and M(i) convert from single-value (i element of 0..n^2) indices
+to two-value (l,m) indices.
+   [wxMaxima: comment end   ] */
+
+/* [wxMaxima: input   start ] */
+L(i) := floor(sqrt(i));
+M(i) := i-L(i)-L(i)^2;
+/* [wxMaxima: input   end   ] */
+
+/* [wxMaxima: input   start ] */
+K(l,m) := sqrt((((2*l+1)/(4*%pi))*((l-m)!/(l+m)!)));
+/* [wxMaxima: input   end   ] */
+
+/* [wxMaxima: input   start ] */
+SH(l,m,theta,phi) :=
+    K(l,m)*assoc_legendre_p(l,m,cos(theta))
+        *sin(m*phi);
+/* [wxMaxima: input   end   ] */
+
+/* [wxMaxima: comment start ]
+Y(i,theta,phi) returns the real part of the i-th spherical harmonic function.
+   [wxMaxima: comment end   ] */
+
+/* [wxMaxima: input   start ] */
+Y(i,theta,phi) := block(
+    l: L(i), m: M(i),
+    ylm: spherical_harmonic(l,m,theta,phi),
+    ylmm: spherical_harmonic(l,m,theta,phi),
+    if m < 0 then
+        (%I/sqrt(2))*(ylm - ((-1)^m)*ylmm)
+    else if m = 0 then
+        ylm
+    else if m > 0 then
+        (1/sqrt(2))*(ylmm + ((-1)^m)*ylm)
+);
+/* [wxMaxima: input   end   ] */
+
+/* [wxMaxima: comment start ]
+The SH triple product tensor Γ(i,j,k) is defined by
+   [wxMaxima: comment end   ] */
+
+/* [wxMaxima: input   start ] */
+gam(i,j,k) := 
+    integrate(
+        integrate(
+            Y(i,theta,phi)* Y(j,theta,phi) * Y(k,theta,phi)
+                *sin(theta),
+        theta,0,%pi),
+    phi,0,2*%pi);
+/* [wxMaxima: input   end   ] */
+
+/* [wxMaxima: comment start ]
+Generates an array of index triples (i,j,k), along with their associated value,
+of all non-zero elements in Γ.
+   [wxMaxima: comment end   ] */
+
+/* [wxMaxima: input   start ] */
+triples(n) := block(
+    arr: [],
+    for i: 0 while i < n^2 do
+        for j: 0 while j < n^2 do
+            for k: 0 while k < n^2 do block(
+                temp: float(gam(i,j,k)),
+                if notequal(temp,0) then
+                    arr: cons([i,j,k,temp],arr)),
+    arr);
+/* [wxMaxima: input   end   ] */
+
+/* [wxMaxima: comment start ]
+Example of calling the triples function. It might take a couple of minutes.
+   [wxMaxima: comment end   ] */
+
+/* [wxMaxima: input   start ] */
+T: triples(3);
+/* [wxMaxima: input   end   ] */
+
+/* Maxima can't load/batch files which end with a comment! */
+"Created with wxMaxima"$
