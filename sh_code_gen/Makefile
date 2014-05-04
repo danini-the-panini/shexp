@@ -1,6 +1,6 @@
 CC=clang++
 
-LIBS=glew glfw3
+LIBS=
 LIB_CFLAGS=$(foreach lib,${LIBS},$(shell pkg-config --cflags $(lib)))
 LDLIBS=$(foreach lib,${LIBS},$(shell pkg-config --static --libs $(lib)))
 
@@ -10,37 +10,24 @@ CFLAGS= ${WARNING_FLAGS} ${FORMATTING_FLAGS} ${LIB_CFLAGS} -g -std=c++11 -pipe
 
 LDFLAGS=-g
 
-TARGET=main
+TARGET=sh_code_gen
 OBJECTS=$(addsuffix .o, $(basename $(shell ls *.C)))
 HEADERS=$(addsuffix .h, $(basename $(shell ls *.h)))
 
-CLEAN_TARGETS=$(addsuffix .o, $(basename $(shell ls *.C))) ${TARGET} ${TARGET}.exe *.rpo *.gch makefile.dep
+CODE_OUTPUT=sh_functions.h
 
-CODE_GEN_DIR=sh_code_gen
-CODE_GEN_TARGET=sh_code_gen
-
-SH_BANDS=3
-
-CODE_GENERATOR=gen_sh_functions.rb
+CLEAN_TARGETS=$(addsuffix .o, $(basename $(shell ls *.C))) ${TARGET} ${TARGET}.exe *.rpo *.gch makefile.dep ${CODE_OUTPUT}
 
 all: ${OBJECTS}
 	${CC} $^ ${LDFLAGS} -o ${TARGET} ${LDLIBS}
 
-${OBJECTS}:
+%.o:
 	${CC} ${CFLAGS} -c ${LDFLAGS} $< -o $@
 
 clean:
-	$(MAKE) -C ${CODE_GEN_DIR} clean
 	rm -rf ${CLEAN_TARGETS}
 
 # Calculate dependencies based on output from gcc -MM.
-makefile.dep: sh_functions.h *.[Ch]
+makefile.dep: *.[Ch]
 	for i in *.C; do gcc ${CFLAGS} -MM "$${i}"; done > $@
-
-sh_functions.h: ${CODE_GEN_DIR}/${CODE_GEN_TARGET} ${CODE_GEN_DIR}/${CODE_GENERATOR}
-	$< ${SH_BANDS} | ruby ${CODE_GEN_DIR}/${CODE_GENERATOR} ${SH_BANDS} > $@
-
-${CODE_GEN_DIR}/${CODE_GEN_TARGET}:
-	$(MAKE) -C ${CODE_GEN_DIR}
-
 include makefile.dep

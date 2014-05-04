@@ -199,8 +199,8 @@ def code_gen(n,gamma)
 
   code = {:pr => [], :sq => [], :mat => []}
 
-  code[:pr] << "#{REAL} ta, tb, t" << ""
-  code[:sq] << "#{REAL} ta, t" << ""
+  code[:pr] << "#{REAL} ta, tb, t;" << ""
+  code[:sq] << "#{REAL} ta, t;" << ""
 
   # The code is then generated in ( i , j ) order of
   # these index pairs
@@ -217,21 +217,21 @@ def code_gen(n,gamma)
     # Case i ≠ j ; assumes km ≠ i , km ≠ j
     if i != j
       # ta = d1 *a[ k1 ] + d2 *a[ k2 ] + ... + dN *a[ kN ];
-      code[:pr] << "ta = " + product_add.('a',dk)
+      code[:pr] << "ta = " + product_add.('a',dk) + ";"
       # tb = d1 *b[ k1 ] + d2 *b[ k2 ] + ... + dN *b[ kN ];
-      code[:pr] << "tb = " + product_add.('b',dk)
+      code[:pr] << "tb = " + product_add.('b',dk) + ";"
       # c[ i ] += ta*b[ j ] + tb*a[ j ];
-      code[:pr] << assign_c[i,:pr] + "ta*b[#{j}] + tb*a[#{j}]"
+      code[:pr] << assign_c[i,:pr] + "ta*b[#{j}] + tb*a[#{j}];"
       # c[ j ] += ta*b[ i ] + tb*a[ i ];
-      code[:pr] << assign_c[j,:pr] + "ta*b[#{i}] + tb*a[#{i}]"
+      code[:pr] << assign_c[j,:pr] + "ta*b[#{i}] + tb*a[#{i}];"
       # t = a[ i ]*b[ j ] + a[ j ]*b[ i ];
-      code[:pr] << "t = a[#{i}]*b[#{j}] + a[#{j}]*b[#{i}]"
+      code[:pr] << "t = a[#{i}]*b[#{j}] + a[#{j}]*b[#{i}];"
       # c[ k1 ] += d1 *t;
       # c[ k2 ] += d2 *t;
       # ...
       # c[ kN ] += dN *t;
       dk.each do |dm,km|
-        code[:pr] << assign_c[km,:pr] + "#{dm}*t"
+        code[:pr] << assign_c[km,:pr] + "#{dm}*t;"
       end
       # // 3N+6 multiplies, 3N+3 additions
       multiplies[:pr] += 3 * k.size + 6
@@ -240,23 +240,23 @@ def code_gen(n,gamma)
     # Case i = j
     else
       if dk_2.empty?
-        code[:pr] << assign_c[i,:pr] + "#{d[0]}*b[#{i}]*a[#{i}]"
+        code[:pr] << assign_c[i,:pr] + "#{d[0]}*b[#{i}]*a[#{i}];"
         multiplies[:pr] += 2
       else
         # ta = d1 *a[ k1 ] + d2 *a[ k2 ] + ... + dN *a[ kN ]; // km ≠ i
-        code[:pr] << "ta = " + product_add.('a',dk_2)
+        code[:pr] << "ta = " + product_add.('a',dk_2) + ";"
         # tb = d1 *b[ k1 ] + d2 *b[ k2 ] + ... + dN *b[ kN ]; // km ≠ i
-        code[:pr] << "tb = " + product_add.('b',dk_2)
+        code[:pr] << "tb = " + product_add.('b',dk_2) + ";"
         # c[ i ] += ta*b[ i ] + tb*a[ i ];
-        code[:pr] << assign_c[i,:pr] + "ta*b[#{i}] + tb*a[#{i}]"
+        code[:pr] << assign_c[i,:pr] + "ta*b[#{i}] + tb*a[#{i}];"
         # t = a[ i ]*b[ i ];
-        code[:pr] << "t = a[#{i}]*b[#{i}]"
+        code[:pr] << "t = a[#{i}]*b[#{i}];"
         # c[ k1 ] += d1 *t;
         # c[ k2 ] += d2 *t;
         # ...
         # c[ kN ] += dN *t;
         dk.each do |dm,km|
-          code[:pr] << assign_c[km,:pr] + "#{dm}*t"
+          code[:pr] << assign_c[km,:pr] + "#{dm}*t;"
         end
         # 3N+1 multiplies, 3N-2 additions
         multiplies[:pr] += 3 * k.size + 1
@@ -272,19 +272,19 @@ def code_gen(n,gamma)
     # Case i ≠ j ; assumes km ≠ i , km ≠ j
     if i != j
       # ta = ( 2*d1 )*a[ k1 ] + ( 2*d2 )*a[ k2 ] + ... + ( 2*dN )*a[ kN ];
-      code[:sq] << "ta = " + square_add.(dk)
+      code[:sq] << "ta = " + square_add.(dk) + ";"
       # c[ i ] += ta*a[ j ];
-      code[:sq] << assign_c[i,:sq] + "ta*a[#{j}]"
+      code[:sq] << assign_c[i,:sq] + "ta*a[#{j}];"
       # c[ j ] += ta*a[ i ];
-      code[:sq] << assign_c[j,:sq] + "ta*a[#{i}]"
+      code[:sq] << assign_c[j,:sq] + "ta*a[#{i}];"
       # t = a[ i ]*a[ j ];
-      code[:sq] << "t = a[#{i}]*a[#{j}]"
+      code[:sq] << "t = a[#{i}]*a[#{j}];"
       # c[ k1 ] += ( 2*d1 )*t;
       # c[ k2 ] += ( 2*d2 )*t;
       # ...
       # c[ kN ] += ( 2*dN )*t;
       dk.each do |dm,km|
-        code[:sq] << assign_c[km,:sq] + "#{2*dm}*t"
+        code[:sq] << assign_c[km,:sq] + "#{2*dm}*t;"
       end
       # 2N+3 multiplies, 2N+1 additions
       multiplies[:sq] += 2 * k.size + 3
@@ -293,21 +293,21 @@ def code_gen(n,gamma)
       # Case i = j
     else
       if dk_2.empty?
-        code[:sq] << assign_c[i,:sq] + "#{d[0]}*a[#{i}]*a[#{i}]"
+        code[:sq] << assign_c[i,:sq] + "#{d[0]}*a[#{i}]*a[#{i}];"
         multiplies[:sq] += 2
       else
         # ta = ( 2*d1 )*a[ k1 ] + ( 2*d2 )*a[ k2 ] + ... + ( 2*dN )*a[ kN ]; // k m ≠ i
-        code[:sq] << "ta = " + square_add.(dk_2).to_s
+        code[:sq] << "ta = " + square_add.(dk_2).to_s + ";"
         # c[ i ] += ta*a[ i ];
-        code[:sq] << assign_c[i,:sq] + "ta*a[#{i}]"
+        code[:sq] << assign_c[i,:sq] + "ta*a[#{i}];"
         # t = a[ i ]*a[ i ];
-        code[:sq] << "t = a[#{i}]*a[#{i}]"
+        code[:sq] << "t = a[#{i}]*a[#{i}];"
         # c[ k 1 ] += d1 *t;
         # c[ k 2 ] += d2 *t;
         # ...
         # c[ k N ] += dN *t;
         dk.each do |dm,km|
-          code[:sq] << assign_c[km,:sq] + "#{dm}*t"
+          code[:sq] << assign_c[km,:sq] + "#{dm}*t;"
         end
         # 2N+2 multiplies, 2N additions
         multiplies[:sq] += 2 * k.size + 2
@@ -345,7 +345,7 @@ def code_gen(n,gamma)
 
   code[:mat] << "// compute upper triangular part of matrix"
   mat.each do |index,kc|
-    code[:mat] << "M[#{ij2i[*index]}] = #{matrix_product[kc]}"
+    code[:mat] << "M[#{ij2i[*index]}] = #{matrix_product[kc]};"
     entries[:mat] += 1 unless kc.empty?
     multiplies[:mat] += kc.size
     additions[:mat] += kc.size-1 if kc.size > 1
@@ -362,7 +362,7 @@ def code_gen(n,gamma)
   code[:mat] << "// fill in lower triangular part of matrix"
   (0...n*n).each do |i|
     (0...i).each do |j|
-      code[:mat] << "M[#{i*n*n+j}] = M[#{j*n*n+i}] // #{i},#{j} = #{j},#{i}"
+      code[:mat] << "M[#{i*n*n+j}] = M[#{j*n*n+i}]; // #{i},#{j} = #{j},#{i}"
     end
   end
 
@@ -370,7 +370,7 @@ def code_gen(n,gamma)
     code[f].map { |x| (x.nil? || x.empty?) ? "\n" : "  #{x}\n" }.reduce{ |x,y| x+y }
   }
 
-  product_code = "void SH_product_#{n}(const #{REAL} *a, const #{REAL} *b, #{REAL} &*c)\n{\n" + concat_code[:pr] + "}\n"
+  product_code = "void SH_product_#{n}(const #{REAL} *a, const #{REAL} *b, #{REAL} *c)\n{\n" + concat_code[:pr] + "}\n"
 
   square_code = "void SH_square_#{n}(const #{REAL} *a, #{REAL} *c)\n{\n" + concat_code[:sq] + "}\n"
 
