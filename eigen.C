@@ -7,12 +7,13 @@
 
 using namespace std;
 
+inline double round(double x) { return ((double)(int)(x*10000))*0.0001; }
 
 void printvector(double* x, int m)
 {
   cout << "[ ";
   for (int i = 0; i < m; i++)
-    cout << setprecision(4) << setw(10) << x[i] << " ";
+    cout << setprecision(4) << setw(10) << round(x[i]) << " ";
   cout << "]" << endl;
 }
 

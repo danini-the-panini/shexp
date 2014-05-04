@@ -370,13 +370,13 @@ def code_gen(n,gamma)
     code[f].map { |x| (x.nil? || x.empty?) ? "\n" : "  #{x}\n" }.reduce{ |x,y| x+y }
   }
 
-  product_code = "void SH_product_#{n}(const #{REAL} *a, const #{REAL} *b, #{REAL} *c)\n{\n" + concat_code[:pr] + "}\n"
+  product_code = "void SH_product(const #{REAL} *a, const #{REAL} *b, #{REAL} *c)\n{\n" + concat_code[:pr] + "}\n"
 
-  square_code = "void SH_square_#{n}(const #{REAL} *a, #{REAL} *c)\n{\n" + concat_code[:sq] + "}\n"
+  square_code = "void SH_square(const #{REAL} *a, #{REAL} *c)\n{\n" + concat_code[:sq] + "}\n"
 
-  matrix_code = "void SH_matrix_#{n}(const #{REAL} *a, #{REAL} *M)\n{\n" + concat_code[:mat] + "}\n"
+  matrix_code = "void SH_matrix(const #{REAL} *a, #{REAL} *M)\n{\n" + concat_code[:mat] + "}\n"
 
-  product_code + "\n" + square_code + "\n" + matrix_code
+  "#define N_BANDS #{n}\n\n" + product_code + "\n" + square_code + "\n" + matrix_code
 end
 
 # def sort_triples(gamma)

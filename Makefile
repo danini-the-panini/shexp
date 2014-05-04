@@ -40,7 +40,7 @@ makefile.dep: sh_functions.h *.[Ch]
 sh_functions.h: ${CODE_GEN_DIR}/${CODE_GEN_TARGET} ${CODE_GEN_DIR}/${CODE_GENERATOR}
 	$< ${SH_BANDS} | ruby ${CODE_GEN_DIR}/${CODE_GENERATOR} ${SH_BANDS} > $@
 
-${CODE_GEN_DIR}/${CODE_GEN_TARGET}:
+${CODE_GEN_DIR}/${CODE_GEN_TARGET}: ${CODE_GEN_DIR}/*.[Ch]
 	$(MAKE) -C ${CODE_GEN_DIR}
 
 include makefile.dep

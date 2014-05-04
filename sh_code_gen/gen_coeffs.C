@@ -15,8 +15,7 @@ using namespace std;
 //           max(0.0, -4.0 * sin(theta - M_PI) * cos(phi - 2.5) - 3.0);
 // }
 
-inline bool is_zero(double x)
-{ return (x>0 ? x : -x) < 0.00001; }
+inline bool is_zero(double x) { return (x>0 ? x : -x) < 0.00001; }
 
 int main(int argc, char** argv)
 {
