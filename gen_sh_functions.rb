@@ -24,7 +24,8 @@ def code_gen(n,gamma)
   # of unique indices in the triple
   # (T[p].i, T[p].j, T[p].k)
   total_entries = 0
-  gamma.each do |i, j, k, c|
+  gamma.each do |triple, c|
+    i, j, k = triple
 
     # If there is only one unique index i in this
     # triple, we increment N[i][i].
@@ -102,7 +103,8 @@ def code_gen(n,gamma)
     # triples containing ( i , j ).
     kk = []
     d = []
-    gamma.each do |i, j, k, c|
+    gamma.each do |triple, c|
+      i, j, k = triple
 
       k2 = nil
       if im == i && jm == j
@@ -158,8 +160,8 @@ def code_gen(n,gamma)
   end
 
 
-  multiplies = {:pr => 0, :sq => 0}
-  additions = {:pr => 0, :sq => 0}
+  multiplies = {:pr => 0, :sq => 0, :mat => 0}
+  additions = {:pr => 0, :sq => 0, :mat => 0}
 
   # keeping track of when a vector component of the
   # output, c[ i ], is first assigned and using a
@@ -334,13 +336,13 @@ def code_gen(n,gamma)
   product_code + "\n" + square_code
 end
 
-def sort_triples(gamma)
+# def sort_triples(gamma)
 
-  gamma.map do |i,j,k,c|
-    [i,j,k].sort.push(c)
-  end.uniq.sort
+#   gamma.map do |i,j,k,c|
+#     [i,j,k].sort.push(c)
+#   end.uniq.sort
 
-end
+# end
 
 N = ARGV[0].to_i
 if ARGV.size > 1
@@ -349,9 +351,9 @@ else
   ARGV.replace([])
 end
 
-triples = eval(ARGF.read)
+gamma = eval(ARGF.read)
 
-# triples.each { |t| p t }
+# gamma.each { |t| p t }
 
 
-puts code_gen(N, triples)
+puts code_gen(N, gamma)

@@ -21,7 +21,7 @@ int main(int argc, char** argv)
 {
   const int n_bands = (argc > 1) ? atoi(argv[1]) : 3;
   const int n_coeff = n_bands*n_bands;
-  const int sqrt_n_samples = 3000;
+  const int sqrt_n_samples = 1000;
   const int n_samples = sqrt_n_samples*sqrt_n_samples;
 
   SHSample* samples = new SHSample[n_samples];
@@ -59,7 +59,7 @@ int main(int argc, char** argv)
 
   SH_product_tensor(samples, n_samples, n_bands, gamma);
 
-  cout << "[";
+  cout << "{";
   int m = 0;
   for (int i = 0; i < n_coeff; ++i)
     for (int j = i; j < n_coeff; ++j)
@@ -67,9 +67,9 @@ int main(int argc, char** argv)
         if (!is_zero(gamma[i][j][k]))
         {
           if (m++>0) cout << ",";
-          cout << "["<<i<<","<<j<<","<<k<<","<<gamma[i][j][k]<<"]";
+          cout << "["<<i<<","<<j<<","<<k<<"] => "<<gamma[i][j][k];
         }
-  cout << "]";
+  cout << "}";
 
   cout << endl;
 
