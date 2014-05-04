@@ -205,7 +205,7 @@ def code_gen(n,gamma)
   # these index pairs
   nt.sort.each do |i, j, nm, k, d|
 
-    comment = "// [#{i},#{j}], " + k.reduce { |x,y| "#{x}, #{y}" }.to_s
+    comment = "// [#{i},#{j}]: " + k.reduce { |x,y| "#{x}, #{y}" }.to_s
 
     dk = d.zip(k)
     dk_2 = dk.select { |dm,km| km != i } # km ≠ i
