@@ -32,10 +32,10 @@ def code_gen(n,gamma)
     if i == j && j == k
       nn[i][i]+=1
 
-      total_entries+=1
-      # puts "ONE: #{i} #{j} #{k}"
-      # puts "N[#{i}][#{i}] := #{nn[i][j]}"
-      # puts
+    total_entries+=1
+    # puts "ONE: #{i} #{j} #{k}"
+    # puts "N[#{i}][#{i}] := #{nn[i][j]}"
+    # puts
 
     # If there are three, we increment N[ i ][ j ],
     # N[ i ][ k ], and N[ j ][ k ], corresponding to
@@ -162,6 +162,7 @@ def code_gen(n,gamma)
 
   multiplies = {:pr => 0, :sq => 0, :mat => 0}
   additions = {:pr => 0, :sq => 0, :mat => 0}
+  entries = {:pr => nt.size, :sq => nt.size, :mat => 0}
 
   # keeping track of when a vector component of the
   # output, c[ i ], is first assigned and using a
@@ -196,7 +197,7 @@ def code_gen(n,gamma)
     }
   }
 
-  code = {:pr => [], :sq => []}
+  code = {:pr => [], :sq => [], :mat => []}
 
   code[:pr] << "#{REAL} ta, tb, t" << ""
   code[:sq] << "#{REAL} ta, t" << ""
@@ -319,21 +320,63 @@ def code_gen(n,gamma)
     ## TODO: generate matrix code
   end
 
-  [:pr,:sq].each do |f|
-    code[f] << "// entry count: #{nt.size}"
+  matrix_term = -> (k,c) { "#{c}*a[#{k}]" }
+
+  mat = {}
+
+  (0...n*n).each do |i|
+    (i...n*n).each do |j|
+      mat[[i,j]] = []
+    end
+  end
+
+  gamma.each do |triple, c|
+    i,j,k = triple
+
+    mat[[i,j]] << matrix_term[k,c]
+    mat[[i,k]] << matrix_term[j,c] unless k==j
+    mat[[j,k]] << matrix_term[i,c] unless j==i
+  end
+
+  ij2i = -> (i,j) { i*n*n+j }
+  matrix_product = -> (m) {
+    m.empty? ? "0" : m.reduce { |x,y| "#{x} + #{y}" }
+  }
+
+  code[:mat] << "// compute upper triangular part of matrix"
+  mat.each do |index,kc|
+    code[:mat] << "M[#{ij2i[*index]}] = #{matrix_product[kc]}"
+    entries[:mat] += 1 unless kc.empty?
+    multiplies[:mat] += kc.size
+    additions[:mat] += kc.size-1 if kc.size > 1
+  end
+
+  [:pr,:sq,:mat].each do |f|
+    code[f] << "// entry count: #{entries[f]}"
     code[f] << "// multiply count: #{multiplies[f]}"
     code[f] << "// addition count: #{additions[f]}"
+  end
+
+  code[:mat] << ""
+
+  code[:mat] << "// fill in lower triangular part of matrix"
+  (0...n*n).each do |i|
+    (0...i).each do |j|
+      code[:mat] << "M[#{i*n*n+j}] = M[#{j*n*n+i}] // #{i},#{j} = #{j},#{i}"
+    end
   end
 
   concat_code = -> f {
     code[f].map { |x| (x.nil? || x.empty?) ? "\n" : "  #{x}\n" }.reduce{ |x,y| x+y }
   }
 
-  product_code = "SH_product_#{n}(const #{REAL} *a, const #{REAL} *b, #{REAL} &*c)\n{\n" + concat_code[:pr] + "}\n"
+  product_code = "void SH_product_#{n}(const #{REAL} *a, const #{REAL} *b, #{REAL} &*c)\n{\n" + concat_code[:pr] + "}\n"
 
-  square_code = "SH_square_#{n}(const #{REAL} *a, #{REAL} *c)\n{\n" + concat_code[:sq] + "}\n"
+  square_code = "void SH_square_#{n}(const #{REAL} *a, #{REAL} *c)\n{\n" + concat_code[:sq] + "}\n"
 
-  product_code + "\n" + square_code
+  matrix_code = "void SH_matrix_#{n}(const #{REAL} *a, #{REAL} *M)\n{\n" + concat_code[:mat] + "}\n"
+
+  product_code + "\n" + square_code + "\n" + matrix_code
 end
 
 # def sort_triples(gamma)
