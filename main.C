@@ -47,19 +47,26 @@ int main()
 
     Map<MatrixSH, Unaligned, Stride<1,N_COEFF> > m(matrices[i]);
 
+
+    SelfAdjointEigenSolver<MatrixSH> eigensolver(m);
+    if (eigensolver.info() != Success) abort();
+
     if ( i == N_COEFF/2 )
     {
-      SelfAdjointEigenSolver<MatrixSH> eigensolver(m);
-
-      if (eigensolver.info() != Success) abort();
+      cout << "Original Matrix\n"
+           << m << endl;
 
       cout << "The eigenvalues of A are:\n" << eigensolver.eigenvalues() << endl;
       cout << "Here's a matrix whose columns are eigenvectors of A \n"
            << "corresponding to these eigenvalues:\n"
            << eigensolver.eigenvectors() << endl;
 
+      MatrixSH d;
+      d.setZero();
+      d.diagonal() = eigensolver.eigenvalues();
+
       cout << "Here's something:\n"
-           << eigensolver.eigenvectors() * eigensolver.eigenvectors().transpose() << endl;
+           << eigensolver.eigenvectors().transpose() * d * eigensolver.eigenvectors() << endl;
     }
 
 
