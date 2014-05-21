@@ -11,11 +11,11 @@ struct Vector3d {
   double z;
 };
 
-struct SHSample { 
- Vector3d sph; 
- Vector3d vec; 
- double* coeff; 
-}; 
+struct SHSample {
+ Vector3d sph;
+ Vector3d vec;
+ double* coeff;
+};
 
 void SH_setup_spherical_samples(
   SHSample samples[],

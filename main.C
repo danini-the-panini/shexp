@@ -1,4 +1,4 @@
-#include "sh_code_gen/green.h"
+#include "green.h"
 #include "sh_functions.h"
 
 #include <cmath>

@@ -31,7 +31,7 @@ int main(int argc, char** argv)
   }
   SH_setup_spherical_samples(samples, sqrt_n_samples, n_bands);
   double* coeffs = new double[n_coeff];
-  memset(coeffs, 0.0, n_coeff*sizeof(double)); 
+  memset(coeffs, 0.0, n_coeff*sizeof(double));
 
   // SH_project_polar_function(light, samples, n_samples, n_bands, coeffs);
 
