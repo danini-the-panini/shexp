@@ -41,7 +41,7 @@ int main()
 
   for (int i = 0; i < N_SLICES; i++)
   {
-    double t = ((double)i/(double)(N_SLICES-1))*M_PI;
+    double t = ((double)i/(double)N_SLICES)*M_PI;
 
     slices[i] = new double[N_COEFF];
     SH_project_polar_function(
@@ -60,16 +60,19 @@ int main()
     SelfAdjointEigenSolver<MatrixSH> eigensolver(m);
     if (eigensolver.info() != Success) abort();
 
+    // Ren et al. 2006
+    double epsilon = 0.02 * eigensolver.eigenvalues().maxCoeff();
+
     MatrixSH d;
     d.setZero();
     auto diagonal = d.diagonal();
     for (int j =- 0; j < N_COEFF; j++)
     {
-      diagonal[j] = q(eigensolver.eigenvalues()[j]);
+      diagonal[j] = q(max(eigensolver.eigenvalues()[j], epsilon));
     }
 
+    // Ren et al. 2006 eq. 28
     MatrixSH mg = eigensolver.eigenvectors() * d * eigensolver.eigenvectors().transpose();
-
     VectorSH f = mg * (v - SH_UNIT);
 
     cout << "f[" << (t/M_PI)*180.0 << "] = " << f << endl;
