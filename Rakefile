@@ -3,14 +3,14 @@ require 'rake/clean'
 CC='clang++'
 
 LIBS=['glew', 'glfw3']
-LIB_CFLAGS=LIBS.map { |lib| %x[ pkg-config --cflags #{lib} ].gsub(/\n/,' ').strip }.flatten.join(' ')
-LDLIBS=LIBS.map { |lib| %x[ pkg-config --static --libs #{lib} ].gsub(/\n/,' ').strip }.flatten.join(' ')
+LIB_CFLAGS=LIBS.map { |lib| %x[ pkg-config --cflags #{lib} ].gsub(/\n/,' ') }.flatten.join(' ')
+LDLIBS=LIBS.map { |lib| %x[ pkg-config --static --libs #{lib} ].gsub(/\n/,' ') }.flatten.join(' ')
 
 WARNING_FLAGS='-Wall -Wextra -Weffc++ -Winit-self -Wmissing-include-dirs -Wswitch-default -Wswitch-enum -Wunused-parameter -Wstrict-overflow=5 -Wfloat-equal -Wshadow -Wc++0x-compat -Wconversion -Wsign-conversion -Wmissing-declarations -Woverloaded-virtual -Wsign-promo -pedantic'
 FORMATTING_FLAGS='-fmessage-length=80 -fdiagnostics-show-option'
 CFLAGS="#{WARNING_FLAGS} #{FORMATTING_FLAGS} #{LIB_CFLAGS} -g -std=c++11 -pipe"
 
-LDFLAGS='-g'
+LDFLAGS="#{LDLIBS} -g"
 
 GENERATOR_HELPERS=['gen_helper.rb']
 CODE_GENERATOR='gen_sh_functions.rb'
@@ -37,8 +37,7 @@ SH_BANDS=3
 task :default => MAIN_TARGET
 
 def build target, objects
-  puts "Building #{target} from #{objects}"
-  sh "#{CC} #{LDLIBS} #{LDFLAGS} -o #{target} #{objects.join(' ')}"
+  sh "#{CC} #{objects.join(' ')} -o #{target} #{LDFLAGS}"
 end
 
 def compile object, source

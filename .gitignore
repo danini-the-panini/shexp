@@ -20,6 +20,7 @@
 *.out
 *.app
 main
+gen_coeffs
 
 # other junk
 makefile.dep
