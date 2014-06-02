@@ -1,4 +1,5 @@
-#pragma once
+#ifndef GREEN_H
+#define GREEN_H
 
 #include <chrono>
 #include <cmath>
@@ -74,3 +75,5 @@ const double factorial[34]=
   2.631308369336935e+35,
   8.683317618811886e+36
 };
+
+#endif // GREEN_H

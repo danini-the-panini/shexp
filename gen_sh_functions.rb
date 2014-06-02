@@ -1,10 +1,9 @@
-## Code Generation and Factoring for Fast Evaluation 
-## of Low-order Spherical Harmonic Products and Squares 
+require_relative 'gen_helper'
+
+## Code Generation and Factoring for Fast Evaluation
+## of Low-order Spherical Harmonic Products and Squares
 
 ## John Snyder, 2006
-
-REAL = "double"
-INDENT = "  "
 
 # The code generator is given n as input, as well as a
 # list of the nonzero entries in Γ, stored as an array
@@ -370,13 +369,13 @@ def code_gen(n,gamma)
     code[f].map { |x| (x.nil? || x.empty?) ? "\n" : "  #{x}\n" }.reduce{ |x,y| x+y }
   }
 
-  product_code = "void SH_product(const #{REAL} *a, const #{REAL} *b, #{REAL} *c)\n{\n" + concat_code[:pr] + "}\n"
+  product_code = "#{PRODUCT_SIG}\n{\n" + concat_code[:pr] + "}\n"
 
-  square_code = "void SH_square(const #{REAL} *a, #{REAL} *c)\n{\n" + concat_code[:sq] + "}\n"
+  square_code = "#{SQUARE_SIG}\n{\n" + concat_code[:sq] + "}\n"
 
-  matrix_code = "void SH_matrix(const #{REAL} *a, #{REAL} *M)\n{\n" + concat_code[:mat] + "}\n"
+  matrix_code = "#{MATRIX_SIG}\n{\n" + concat_code[:mat] + "}\n"
 
-  "#define N_BANDS #{n}\n\n" + product_code + "\n" + square_code + "\n" + matrix_code
+  product_code + "\n" + square_code + "\n" + matrix_code
 end
 
 # def sort_triples(gamma)
@@ -398,5 +397,4 @@ gamma = eval(ARGF.read)
 
 # gamma.each { |t| p t }
 
-
-puts code_gen(N, gamma)
+puts code_gen(N,gamma)

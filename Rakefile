@@ -12,20 +12,25 @@ CFLAGS="#{WARNING_FLAGS} #{FORMATTING_FLAGS} #{LIB_CFLAGS} -g -std=c++11 -pipe"
 
 LDFLAGS='-g'
 
+GENERATOR_HELPERS=['gen_helper.rb']
 CODE_GENERATOR='gen_sh_functions.rb'
-GENERATED_CODE='sh_functions.h'
+HEADER_GENERATOR='gen_sh_header.rb'
+GENERATED_HEADER='sh_functions.h'
+GENERATED_CODE='sh_functions.C'
 
 MAIN_TARGET='main'
 GEN_TARGET='gen_coeffs'
 
-BUILDS={MAIN_TARGET => ['green.o', 'main.o'],
+BUILDS={MAIN_TARGET => ['green.o', 'sh_functions.o', 'sh_lut.o', 'main.o'],
   GEN_TARGET => ['green.o', 'gen_coeffs.o']}
 
 OBJECTS={'green.o' => ['green.C','green.h'],
-  'main.o' => ['main.C','green.h','sh_functions.h'],
-  'gen_coeffs.o' => ['gen_coeffs.C','green.h']}
+         'sh_functions.o' => ['sh_functions.C', 'sh_functions.h'],
+         'sh_lut.o' => ['sh_lut.C','sh_lut.h','green.h','sh_functions.h'],
+         'main.o' => ['main.C','sh_lut.h','sh_functions.h'],
+         'gen_coeffs.o' => ['gen_coeffs.C','green.h']}
 
-CLOBBER.include(*OBJECTS.keys,*BUILDS.keys,'sh_functions.h')
+CLOBBER.include(*OBJECTS.keys,*BUILDS.keys,GENERATED_CODE,GENERATED_HEADER)
 
 SH_BANDS=3
 
@@ -52,6 +57,10 @@ BUILDS.each do |target, objects|
   end
 end
 
-file GENERATED_CODE => [GEN_TARGET, CODE_GENERATOR] do |t|
+file GENERATED_CODE => [GEN_TARGET, CODE_GENERATOR].concat(GENERATOR_HELPERS) do |t|
   sh "./#{GEN_TARGET} #{SH_BANDS} | ruby #{CODE_GENERATOR} #{SH_BANDS} > #{GENERATED_CODE}"
+end
+
+file GENERATED_HEADER => [HEADER_GENERATOR].concat(GENERATOR_HELPERS)do |t|
+  sh "ruby #{HEADER_GENERATOR} #{SH_BANDS} > #{GENERATED_HEADER}"
 end
