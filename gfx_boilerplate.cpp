@@ -24,8 +24,8 @@ GFXBoilerplate::
 void GFXBoilerplate::
 init()
 {
-  initGlfw();
   glfwSetErrorCallback(error_callback);
+  initGlfw();
 
   _window = glfwCreateWindow(640, 480, "SHEXP", NULL, NULL);
 
@@ -35,11 +35,11 @@ init()
     exit(EXIT_FAILURE);
   }
 
-  glfwSetKeyCallback(_window,key_callback);
-
   glewExperimental = GL_TRUE;
   glfwMakeContextCurrent(_window);
   initGlew();
+
+  glfwSetKeyCallback(_window,key_callback);
 }
 
 void GFXBoilerplate::
