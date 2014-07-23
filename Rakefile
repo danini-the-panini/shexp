@@ -1,38 +1,42 @@
 require 'rake/clean'
 
-CC='clang++'
+CC = 'clang++'
 
-LIBS=['glew', 'glfw3']
-LIB_CFLAGS=LIBS.map { |lib| %x[ pkg-config --cflags #{lib} ].gsub(/\n/,' ') }.flatten.join(' ')
-LDLIBS=LIBS.map { |lib| %x[ pkg-config --static --libs #{lib} ].gsub(/\n/,' ') }.flatten.join(' ')
+LIBS = ['glew', 'glfw3', 'eigen3']
+LIB_CFLAGS = LIBS.map { |lib| %x[ pkg-config --cflags #{lib} ].gsub(/\n/,' ') }.flatten.join(' ')
+LDLIBS = LIBS.map { |lib| %x[ pkg-config --static --libs #{lib} ].gsub(/\n/,' ') }.flatten.join(' ')
 
-WARNING_FLAGS='-Wall -Wextra -Weffc++ -Winit-self -Wmissing-include-dirs -Wswitch-default -Wswitch-enum -Wunused-parameter -Wstrict-overflow=5 -Wfloat-equal -Wshadow -Wc++0x-compat -Wconversion -Wsign-conversion -Wmissing-declarations -Woverloaded-virtual -Wsign-promo -pedantic'
-FORMATTING_FLAGS='-fmessage-length=80 -fdiagnostics-show-option'
-CFLAGS="#{WARNING_FLAGS} #{FORMATTING_FLAGS} #{LIB_CFLAGS} -g -std=c++11 -pipe"
+WARNING_FLAGS = '-Wall -Wextra -Weffc++ -Winit-self -Wmissing-include-dirs -Wswitch-default -Wswitch-enum -Wunused-parameter -Wstrict-overflow=5 -Wfloat-equal -Wshadow -Wc++0x-compat -Wconversion -Wsign-conversion -Wmissing-declarations -Woverloaded-virtual -Wsign-promo -pedantic'
+FORMATTING_FLAGS = '-fmessage-length=80 -fdiagnostics-show-option'
+CFLAGS = "#{WARNING_FLAGS} #{FORMATTING_FLAGS} #{LIB_CFLAGS} -g -std=c++11 -pipe"
 
-LDFLAGS="#{LDLIBS} -g"
+LDFLAGS = "#{LDLIBS} -g"
 
-GENERATOR_HELPERS=['gen_helper.rb']
-CODE_GENERATOR='gen_sh_functions.rb'
-HEADER_GENERATOR='gen_sh_header.rb'
-GENERATED_HEADER='sh_functions.h'
-GENERATED_CODE='sh_functions.C'
+GENERATOR_HELPERS = ['gen_helper.rb']
+CODE_GENERATOR    = 'gen_sh_functions.rb'
+HEADER_GENERATOR  = 'gen_sh_header.rb'
+GENERATED_HEADER  = 'sh_functions.h'
+GENERATED_CODE    = 'sh_functions.cpp'
 
-MAIN_TARGET='main'
-GEN_TARGET='gen_coeffs'
+MAIN_TARGET = 'main'
+GEN_TARGET  = 'gen_coeffs'
 
-BUILDS={MAIN_TARGET => ['green.o', 'sh_functions.o', 'sh_lut.o', 'main.o'],
-  GEN_TARGET => ['green.o', 'gen_coeffs.o']}
+BUILDS = {
+  MAIN_TARGET => ['green.o', 'sh_functions.o', 'sh_lut.o', 'main.o'],
+  GEN_TARGET  => ['green.o', 'gen_coeffs.o']
+}
 
-OBJECTS={'green.o' => ['green.C','green.h'],
-         'sh_functions.o' => ['sh_functions.C', 'sh_functions.h'],
-         'sh_lut.o' => ['sh_lut.C','sh_lut.h','green.h','sh_functions.h'],
-         'main.o' => ['main.C','sh_lut.h','sh_functions.h'],
-         'gen_coeffs.o' => ['gen_coeffs.C','green.h']}
+OBJECTS = {
+  'green.o'        => ['green.cpp',        'green.h'],
+  'sh_functions.o' => ['sh_functions.cpp', 'sh_functions.h'],
+  'sh_lut.o'       => ['sh_lut.cpp',       'sh_lut.h', 'green.h', 'sh_functions.h'],
+  'main.o'         => ['main.cpp',         'sh_lut.h', 'sh_functions.h'],
+  'gen_coeffs.o'   => ['gen_coeffs.cpp',   'green.h']
+}
 
 CLOBBER.include(*OBJECTS.keys,*BUILDS.keys,GENERATED_CODE,GENERATED_HEADER)
 
-SH_BANDS=3
+SH_BANDS = 3
 
 task :default => MAIN_TARGET
 
@@ -56,10 +60,10 @@ BUILDS.each do |target, objects|
   end
 end
 
-file GENERATED_CODE => [GEN_TARGET, CODE_GENERATOR].concat(GENERATOR_HELPERS) do |t|
+file GENERATED_CODE => [GEN_TARGET, CODE_GENERATOR, *GENERATOR_HELPERS] do |t|
   sh "./#{GEN_TARGET} #{SH_BANDS} | ruby #{CODE_GENERATOR} #{SH_BANDS} > #{GENERATED_CODE}"
 end
 
-file GENERATED_HEADER => [HEADER_GENERATOR].concat(GENERATOR_HELPERS)do |t|
+file GENERATED_HEADER => [HEADER_GENERATOR, *GENERATOR_HELPERS] do |t|
   sh "ruby #{HEADER_GENERATOR} #{SH_BANDS} > #{GENERATED_HEADER}"
 end
