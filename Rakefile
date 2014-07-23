@@ -22,16 +22,17 @@ MAIN_TARGET = 'main'
 GEN_TARGET  = 'gen_coeffs'
 
 BUILDS = {
-  MAIN_TARGET => ['green.o', 'sh_functions.o', 'sh_lut.o', 'main.o'],
+  MAIN_TARGET => ['green.o', 'sh_functions.o', 'sh_lut.o', 'gfx_boilerplate.o', 'main.o'],
   GEN_TARGET  => ['green.o', 'gen_coeffs.o']
 }
 
 OBJECTS = {
-  'green.o'        => ['green.cpp',        'green.h'],
-  'sh_functions.o' => ['sh_functions.cpp', 'sh_functions.h'],
-  'sh_lut.o'       => ['sh_lut.cpp',       'sh_lut.h', 'green.h', 'sh_functions.h'],
-  'main.o'         => ['main.cpp',         'sh_lut.h', 'sh_functions.h'],
-  'gen_coeffs.o'   => ['gen_coeffs.cpp',   'green.h']
+  'green.o'           => ['green.cpp',           'green.h'],
+  'sh_functions.o'    => ['sh_functions.cpp',    'sh_functions.h'],
+  'sh_lut.o'          => ['sh_lut.cpp',          'sh_lut.h', 'green.h', 'sh_functions.h'],
+  'main.o'            => ['main.cpp',            'sh_lut.h', 'sh_functions.h'],
+  'gen_coeffs.o'      => ['gen_coeffs.cpp',      'green.h'],
+  'gfx_boilerplate.o' => ['gfx_boilerplate.cpp', 'gfx_boilerplate.h']
 }
 
 CLOBBER.include(*OBJECTS.keys,*BUILDS.keys,GENERATED_CODE,GENERATED_HEADER)
