@@ -4,6 +4,7 @@
 #include "gfx_boilerplate.h"
 #include "sh_lut.h"
 #include "sh_functions.h"
+#include "sphere.h"
 
 using namespace std;
 
@@ -17,16 +18,21 @@ int main()
   GFXBoilerplate gfx;
   gfx.init();
 
+  Sphere sph;
+  sph.build();
+
   while (!glfwWindowShouldClose(gfx.window()))
   {
     glViewport(0, 0, 640, 480);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-    // TODO: draw something
+
+    sph.draw();
 
     glfwSwapBuffers(gfx.window());
     glfwPollEvents();
   }
 
+  sph.destroy();
   gfx.cleanup();
 
   delete [] sh_logs;

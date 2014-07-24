@@ -3,8 +3,12 @@ require 'rake/clean'
 CC = 'clang++'
 
 LIBS = ['glew', 'glfw3', 'eigen3']
-LIB_CFLAGS = LIBS.map { |lib| %x[ pkg-config --cflags #{lib} ].gsub(/\n/,' ') }.flatten.join(' ')
-LDLIBS = LIBS.map { |lib| %x[ pkg-config --static --libs #{lib} ].gsub(/\n/,' ') }.flatten.join(' ')
+LIB_CFLAGS = LIBS.map { |lib|
+                %x[ pkg-config --cflags #{lib} ].gsub(/\n/,' ')
+             }.flatten.join(' ')
+LDLIBS = LIBS.map {
+           |lib| %x[ pkg-config --static --libs #{lib} ].gsub(/\n/,' ')
+         }.flatten.join(' ')
 
 WARNING_FLAGS = '-Wall -Wextra -Weffc++ -Winit-self -Wmissing-include-dirs -Wswitch-default -Wswitch-enum -Wunused-parameter -Wstrict-overflow=5 -Wfloat-equal -Wshadow -Wc++0x-compat -Wconversion -Wsign-conversion -Wmissing-declarations -Woverloaded-virtual -Wsign-promo -pedantic'
 FORMATTING_FLAGS = '-fmessage-length=80 -fdiagnostics-show-option'
@@ -22,17 +26,22 @@ MAIN_TARGET = 'main'
 GEN_TARGET  = 'gen_coeffs'
 
 BUILDS = {
-  MAIN_TARGET => ['green.o', 'sh_functions.o', 'sh_lut.o', 'gfx_boilerplate.o', 'main.o'],
-  GEN_TARGET  => ['green.o', 'gen_coeffs.o']
+  GEN_TARGET  => ['green.o', 'gen_coeffs.o'],
+  MAIN_TARGET => ['green.o', 'sh_functions.o', 'sh_lut.o',
+                  'gfx_boilerplate.o', 'sphere.o', 'main.o'],
 }
 
 OBJECTS = {
   'green.o'           => ['green.cpp',           'green.h'],
-  'sh_functions.o'    => ['sh_functions.cpp',    'sh_functions.h'],
-  'sh_lut.o'          => ['sh_lut.cpp',          'sh_lut.h', 'green.h', 'sh_functions.h'],
-  'main.o'            => ['main.cpp',            'sh_lut.h', 'sh_functions.h'],
   'gen_coeffs.o'      => ['gen_coeffs.cpp',      'green.h'],
-  'gfx_boilerplate.o' => ['gfx_boilerplate.cpp', 'gfx_boilerplate.h']
+  'sh_functions.o'    => ['sh_functions.cpp',    'sh_functions.h'],
+  'sh_lut.o'          => ['sh_lut.cpp',          'sh_lut.h', 'green.h',
+                                                 'sh_functions.h'],
+  'gfx_boilerplate.o' => ['gfx_boilerplate.cpp', 'gfx_boilerplate.h',
+                                                 'gfx_include.h'],
+  'sphere.o'          => ['sphere.cpp',          'sphere.h', 'gfx_include.h'],
+  'main.o'            => ['main.cpp',            'sh_lut.h', 'sh_functions.h',
+                                                 'sphere.h', 'gfx_include.h'],
 }
 
 CLOBBER.include(*OBJECTS.keys,*BUILDS.keys,GENERATED_CODE,GENERATED_HEADER)
