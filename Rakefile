@@ -42,7 +42,7 @@ OBJECTS = {
                                                  'gfx_include.h'],
   'sphere.o'          => ['sphere.cpp',          'sphere.h', 'gfx_include.h'],
   'shader.o'          => ['shader.cpp',          'shader.h', 'gfx_include.h'],
-  'main.o'            => ['main.cpp',            'sh_lut.h', 'sh_functions.h',
+  'main.o'            => ['main.cpp',            'sh_lut.h', 'sh_functions.h', 'camera.h',
                                                  'sphere.h', 'shader.h', 'gfx_include.h'],
 }
 
