@@ -4,8 +4,6 @@
 #include "gfx_include.h"
 #include <vector>
 
-using namespace std;
-
 class Sphere
 {
 public:

@@ -28,7 +28,8 @@ GEN_TARGET  = 'gen_coeffs'
 BUILDS = {
   GEN_TARGET  => ['green.o', 'gen_coeffs.o'],
   MAIN_TARGET => ['green.o', 'sh_functions.o', 'sh_lut.o',
-                  'gfx_boilerplate.o', 'sphere.o', 'main.o'],
+                  'gfx_boilerplate.o', 'sphere.o', 'shader.o',
+                  'main.o'],
 }
 
 OBJECTS = {
@@ -40,8 +41,9 @@ OBJECTS = {
   'gfx_boilerplate.o' => ['gfx_boilerplate.cpp', 'gfx_boilerplate.h',
                                                  'gfx_include.h'],
   'sphere.o'          => ['sphere.cpp',          'sphere.h', 'gfx_include.h'],
+  'shader.o'          => ['shader.cpp',          'shader.h', 'gfx_include.h'],
   'main.o'            => ['main.cpp',            'sh_lut.h', 'sh_functions.h',
-                                                 'sphere.h', 'gfx_include.h'],
+                                                 'sphere.h', 'shader.h', 'gfx_include.h'],
 }
 
 CLOBBER.include(*OBJECTS.keys,*BUILDS.keys,GENERATED_CODE,GENERATED_HEADER)
