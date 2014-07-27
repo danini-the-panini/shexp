@@ -86,13 +86,13 @@ draw(GLenum type)
   build_sphere(vector<GLfloat> &vertices, vector<GLuint> &indices)
   {
     const GLuint segments = 32;
-    const GLfloat rad_per_lng = (2*(GLfloat)M_PI) / (GLfloat)segments;
+    const GLfloat rad_per_lng = (2.f*(GLfloat)M_PI) / (GLfloat)segments;
     const GLfloat rad_per_lat = ((GLfloat)M_PI) / (GLfloat)segments;
 
     for (GLuint lat = 0; lat <= segments; lat++)
     {
-      GLfloat lat_sin = (GLfloat)sin(lat * rad_per_lat),
-              lat_cos = (GLfloat)cos(lat * rad_per_lat);
+      GLfloat lat_sin = (GLfloat)sin(lat * rad_per_lat - M_PI/2.0),
+              lat_cos = (GLfloat)cos(lat * rad_per_lat - M_PI/2.0);
 
       for (GLuint lng = 0; lng <= segments; lng++)
       {
