@@ -28,8 +28,8 @@ GEN_TARGET  = 'gen_coeffs'
 BUILDS = {
   GEN_TARGET  => ['green.o', 'gen_coeffs.o'],
   MAIN_TARGET => ['green.o', 'sh_functions.o', 'sh_lut.o',
-                  'gfx_boilerplate.o', 'sphere.o', 'shader.o',
-                  'main.o'],
+                  'gfx_boilerplate.o', 'transform.o', 'mesh.o',
+                  'sphere.o', 'shader.o', 'main.o'],
 }
 
 OBJECTS = {
@@ -40,10 +40,12 @@ OBJECTS = {
                                                  'sh_functions.h'],
   'gfx_boilerplate.o' => ['gfx_boilerplate.cpp', 'gfx_boilerplate.h',
                                                  'gfx_include.h'],
-  'sphere.o'          => ['sphere.cpp',          'sphere.h', 'gfx_include.h'],
+  'mesh.o'            => ['mesh.cpp',            'mesh.h', 'gfx_include.h'],
+  'sphere.o'          => ['sphere.cpp',          'sphere.h', 'mesh.h', 'gfx_include.h'],
   'shader.o'          => ['shader.cpp',          'shader.h', 'gfx_include.h'],
+  'transform.o'       => ['transform.cpp',       'transform.h', 'gfx_include.h'],
   'main.o'            => ['main.cpp',            'sh_lut.h', 'sh_functions.h', 'camera.h',
-                                                 'sphere.h', 'shader.h', 'gfx_include.h'],
+                                                 'sphere.h', 'mesh.h', 'shader.h', 'gfx_include.h'],
 }
 
 CLOBBER.include(*OBJECTS.keys,*BUILDS.keys,GENERATED_CODE,GENERATED_HEADER)

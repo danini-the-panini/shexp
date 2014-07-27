@@ -11,6 +11,7 @@
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_access.hpp>
 #include <glm/gtc/matrix_transform.hpp>
+#include <glm/gtc/quaternion.hpp>
 #include <glm/gtc/type_ptr.hpp>
 
 #ifndef M_PI
@@ -28,9 +29,11 @@ using glm::highp;
 using glm::infinitePerspective;
 using glm::lookAt;
 using glm::mat4;
+using glm::mat4_cast;
 using glm::normalize;
 using glm::ortho;
 using glm::precision;
+using glm::quat;
 using glm::rotate;
 using glm::scale;
 using glm::translate;
