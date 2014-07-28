@@ -45,7 +45,8 @@ OBJECTS = {
   'shader.o'          => ['shader.cpp',          'shader.h', 'gfx_include.h'],
   'transform.o'       => ['transform.cpp',       'transform.h', 'gfx_include.h'],
   'main.o'            => ['main.cpp',            'sh_lut.h', 'sh_functions.h', 'camera.h',
-                                                 'sphere.h', 'mesh.h', 'shader.h', 'gfx_include.h'],
+                                                 'transform.h', 'sphere.h', 'mesh.h',
+                                                 'shader.h', 'gfx_include.h'],
 }
 
 CLOBBER.include(*OBJECTS.keys,*BUILDS.keys,GENERATED_CODE,GENERATED_HEADER)
