@@ -29,6 +29,7 @@ public:
 
   void updateMat4(const char* name, mat4 v);
   void updateFloat(const char* name, float);
+  void updateFloatArray(const char* name, float*, int);
   void updateInt(const char* name, int);
   void updateVec3(const char* name, vec3 v);
   void updateVec4(const char* name, vec4 v);

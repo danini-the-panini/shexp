@@ -185,6 +185,12 @@ updateFloat(const char* name, float v)
   if (x != -1) glUniform1f(x, v);
 }
 void Shader::
+updateFloatArray(const char* name, float *v, int size)
+{
+  GLint x = findUniform(name);
+  if (x != -1) glUniform1fv(x, size, v);
+}
+void Shader::
 updateInt(const char* name, int v)
 {
   GLint x = findUniform(name);
@@ -214,6 +220,7 @@ updateVec3Array(const char* name, const vec3* arr, int size)
       floats[i*3] = arr[i].x; floats[i*3+1] = arr[i].y; floats[i*3+2] = arr[i].z;
     }
     glUniform3fv(x, size, floats);
+    delete [] floats;
   }
 }
 
