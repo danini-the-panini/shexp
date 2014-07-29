@@ -50,9 +50,14 @@ void mouse_callback(GLFWwindow *window, double x, double y)
 int main()
 {
   int n_points = 10;
-  double* sh_logs = new double[n_points*N_BANDS*N_BANDS];
+  int lut_size = n_points*N_BANDS*N_BANDS;
+  double* sh_logs = new double[lut_size];
+  float* sh_logs_f = new float[lut_size];
 
   SH_make_lut(sh_logs, n_points);
+
+  for (int i = 0; i < lut_size; i++)
+    sh_logs_f[i] = (float)sh_logs[i];
 
   GFXBoilerplate gfx;
   gfx.init();
@@ -75,6 +80,7 @@ int main()
   pass->use();
   pass->updateMat4("projection",
       infinitePerspective(45.0f, 640.0f/480.0f, 0.1f));
+  pass->updateFloatArray("sh_lut", sh_logs_f, lut_size);
 
   vec3 sphere_positions[] = {
     vec3(0,20,0), vec3(30,20,0)
