@@ -1,0 +1,3 @@
+eigen.o: eigen.C eigen.h
+green.o: green.C green.h
+main.o: main.C eigen.h sh_code_gen/green.h sh_functions.h

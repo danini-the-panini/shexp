@@ -22,6 +22,5 @@
 main
 gen_coeffs
 
-# other junk
-makefile.dep
-sh_functions.h
+*.dSYM
+sh_functions.cpp

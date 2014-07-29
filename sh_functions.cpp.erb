@@ -1,0 +1,24 @@
+#include "sh_functions.h"
+
+<% require_relative 'gen_sh_functions' %>
+<% g = SHGenerator.new(SH_BANDS,@gamma) %>
+<% g.build_array %>
+
+void SH_product(const double *a, const double *b, double *c)
+{
+  double ta, tb, t;
+
+  <%= g.product_code %>
+}
+
+void SH_square(const double *a, double *c)
+{
+  double ta, t;
+
+  <%= g.square_code %>
+}
+
+void SH_matrix(const double *a, double *M)
+{
+  <%= g.matrix_code %>
+}
