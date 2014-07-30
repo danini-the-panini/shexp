@@ -100,7 +100,7 @@ int main()
   pass->updateFloatArray("radiuses", sphere_radiuses, 2);
   pass->updateVec3Array("positions", sphere_positions, 2);
 
-  Transform plane_transform(vec3(0,0,0),quat(1,0,0,0),vec3(100));
+  Transform plane_transform(vec3(0,0,0),quat(1,0,0,0),vec3(200));
 
   while (!glfwWindowShouldClose(gfx.window()))
   {

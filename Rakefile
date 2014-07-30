@@ -22,7 +22,7 @@ RPP = RPlusPlus::Environment.new
 BUILDS = RPP.builds
 OBJECTS = RPP.objects
 ERBS = RPP.erbs
-ERBS['sh_functions.cpp'] << :coeffs << 'gen_sh_functions.rb'
+ERBS.delete 'sh_functions.cpp'
 
 CLOBBER.include(*OBJECTS.keys, *BUILDS.keys, *ERBS.keys)
 
@@ -31,25 +31,29 @@ SH_BANDS = 3
 task :default => 'main'
 
 def build target, objects
+  puts "---------- Building: #{target}"
   sh "#{CC} #{objects.join(' ')} -o #{target} #{LDFLAGS}"
 end
 
 def compile object, source
+  puts "---------- Compiling: #{object}"
   sh "#{CC} #{CFLAGS} -c #{source} -o #{object}"
 end
 
 def erb target, source
+  puts "---------- Generating: #{target}"
   File.write(target, ERB.new(File.read(source)).result)
-end
-
-task :coeffs => ['gen_coeffs'] do |t|
-  @gamma = eval(`./gen_coeffs #{SH_BANDS}`)
 end
 
 ERBS.each do |target, sources|
   file target => sources do |t|
     erb target, sources.first
   end
+end
+
+file 'sh_functions.cpp' => ['sh_functions.cpp.erb', 'gen_sh_functions.rb'] do |t|
+  @gamma = eval(`./gen_coeffs #{SH_BANDS}`)
+  erb 'sh_functions.cpp' => 'sh_functions.cpp.erb'
 end
 
 OBJECTS.each do |object, sources|
