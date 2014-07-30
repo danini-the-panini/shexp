@@ -22,9 +22,10 @@ RPP = RPlusPlus::Environment.new
 BUILDS = RPP.builds
 OBJECTS = RPP.objects
 ERBS = RPP.erbs
+ERB_TARGETS = ERBS.keys
 ERBS.delete 'sh_functions.cpp'
 
-CLOBBER.include(*OBJECTS.keys, *BUILDS.keys, *ERBS.keys)
+CLOBBER.include(*OBJECTS.keys, *BUILDS.keys, ERB_TARGETS)
 
 SH_BANDS = 3
 
@@ -51,10 +52,10 @@ ERBS.each do |target, sources|
   end
 end
 
-file 'sh_functions.cpp' => ['sh_functions.cpp.erb', 'gen_sh_functions.rb'] do |t|
+file 'sh_functions.cpp' => ['sh_functions.cpp.erb', 'gen_sh_functions.rb', 'gen_coeffs'] do |t|
   puts "---------- Exec: ./gen_coeffs"
   @gamma = eval(`./gen_coeffs #{SH_BANDS}`)
-  erb 'sh_functions.cpp' => 'sh_functions.cpp.erb'
+  erb 'sh_functions.cpp', 'sh_functions.cpp.erb'
 end
 
 OBJECTS.each do |object, sources|
