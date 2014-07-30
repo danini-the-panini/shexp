@@ -34,6 +34,10 @@ build_impl(float_list &vertices, uint_list &indices)
       vertices.push_back(x);
       vertices.push_back(y);
       vertices.push_back(z);
+
+      vertices.push_back(x);
+      vertices.push_back(y);
+      vertices.push_back(z);
     }
   }
 

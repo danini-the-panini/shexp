@@ -28,6 +28,7 @@ build()
   send_indices_to_buffer(indices);
 
   enable_position_attr();
+  enable_normal_attr();
 }
 
 void Mesh::
@@ -80,5 +81,13 @@ draw(GLenum type)
   enable_position_attr()
   {
     glEnableVertexAttribArray(1);
-    glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(GLfloat), 0);
+    glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(GLfloat), 0);
+  }
+
+  void Mesh::
+  enable_normal_attr()
+  {
+    glEnableVertexAttribArray(2);
+    glVertexAttribPointer(2, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(GLfloat),
+        (GLvoid*) (3 * sizeof(GLfloat)));
   }

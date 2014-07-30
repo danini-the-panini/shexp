@@ -8,6 +8,7 @@ const int N_COEFF = 9;
 const int LUT_SIZE = 10;
 
 in vec3 v_position;
+in vec3 v_normal;
 
 uniform vec3 color;
 uniform float radiuses[N];
@@ -50,6 +51,16 @@ float[N_COEFF] rotate_to(float[N_COEFF] sh, vec3 v)
   );
 }
 
+float dot_sh(float[N_COEFF] a, float[N_COEFF] b)
+{
+  float sum = 0;
+  for (int i = 0; i < N_COEFF; i++)
+  {
+    sum += a[i] * b[i];
+  }
+  return sum;
+}
+
 float angular_radius(float d, float r)
 {
   return asin(r/d);
@@ -67,19 +78,23 @@ void main()
     vec3 v = positions[i] - v_position;
     float d = length(v);
     float ar = angular_radius(d, radiuses[i]);
-    int lut_index = int((ar/PI)*LUT_SIZE)*N_COEFF;
+    int lut_index = int(clamp(ar/PI,0,1)*LUT_SIZE)*N_COEFF;
     float[N_COEFF] log_coeff;
     for (int j = 0; j < N_COEFF; j++)
     {
       log_coeff[j] = sh_lut[j+lut_index];
     }
-    float[N_COEFF] rlog_coeff = rotate_to(log_coeff, v);
+    float[N_COEFF] rlog_coeff = rotate_to(log_coeff, normalize(v));
     for (int j = 0; j < N_COEFF; j++)
     {
       acc_coeff[j] += rlog_coeff[j];
     }
   }
   acc_coeff[0] += sqrt(4*PI);
-  out_color = vec4(color, 1);
+
+  float[N_COEFF] y_norm = y(v_normal);
+  float ip = dot_sh(acc_coeff, y_norm);
+
+  out_color = vec4(color * ip, 1);
 }
 

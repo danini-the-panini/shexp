@@ -17,17 +17,33 @@ build_impl(float_list &vertices, uint_list &indices)
   vertices.push_back(0);
   vertices.push_back(-0.5);
 
+  vertices.push_back(0);
+  vertices.push_back(1);
+  vertices.push_back(0);
+
   vertices.push_back(0.5f);
   vertices.push_back(0);
   vertices.push_back(-0.5);
 
+  vertices.push_back(0);
+  vertices.push_back(1);
+  vertices.push_back(0);
+
   vertices.push_back(0.5f);
   vertices.push_back(0);
   vertices.push_back(0.5);
 
+  vertices.push_back(0);
+  vertices.push_back(1);
+  vertices.push_back(0);
+
   vertices.push_back(-0.5f);
   vertices.push_back(0);
   vertices.push_back(0.5);
+
+  vertices.push_back(0);
+  vertices.push_back(1);
+  vertices.push_back(0);
 
   indices.push_back(0);
   indices.push_back(1);

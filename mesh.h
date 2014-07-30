@@ -26,6 +26,7 @@ protected:
   void send_vertices_to_buffer(const float_list &vertices);
   void send_indices_to_buffer(const uint_list &indices);
   void enable_position_attr();
+  void enable_normal_attr();
 };
 
 #endif
