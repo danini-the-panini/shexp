@@ -75,7 +75,7 @@ void SH_make_lut(double* data, int n_points)
     MatrixSH mg = eigensolver.eigenvectors() * d * eigensolver.eigenvectors().transpose();
     VectorSH f = mg * (v - SH_UNIT);
 
-    cout << "f[" << (t/M_PI)*180.0 << "] = " << f << endl;
+    //cout << "f[" << (t/M_PI)*180.0 << "] = " << f << endl;
 
     // copy the result into the data array
     memcpy(data+i*N_COEFFS, &f[0], N_COEFFS);

@@ -5,7 +5,7 @@ layout (location = 0) out vec4 out_color;
 
 const int N = 3;
 const int N_COEFF = 9;
-const int LUT_SIZE = 10;
+const int LUT_SIZE = 100;
 
 in vec3 v_position;
 in vec3 v_normal;
@@ -95,6 +95,6 @@ void main()
   float[N_COEFF] y_norm = y(v_normal);
   float ip = dot_sh(acc_coeff, y_norm);
 
-  out_color = vec4(color * ip, 1);
+  out_color = vec4(color * pow(ip,10), 1);
 }
 

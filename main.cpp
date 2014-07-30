@@ -49,7 +49,7 @@ void mouse_callback(GLFWwindow *window, double x, double y)
 
 int main()
 {
-  int n_points = 10;
+  int n_points = 100;
   int lut_size = n_points*N_BANDS*N_BANDS;
   double* sh_logs = new double[lut_size];
   float* sh_logs_f = new float[lut_size];
