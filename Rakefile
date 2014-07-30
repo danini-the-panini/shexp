@@ -52,6 +52,7 @@ ERBS.each do |target, sources|
 end
 
 file 'sh_functions.cpp' => ['sh_functions.cpp.erb', 'gen_sh_functions.rb'] do |t|
+  puts "---------- Exec: ./gen_coeffs"
   @gamma = eval(`./gen_coeffs #{SH_BANDS}`)
   erb 'sh_functions.cpp' => 'sh_functions.cpp.erb'
 end

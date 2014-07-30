@@ -82,23 +82,26 @@ int main()
       infinitePerspective(45.0f, 640.0f/480.0f, 0.1f));
   pass->updateFloatArray("sh_lut", sh_logs_f, lut_size);
 
+  int num_sph = 3;
+
   vec3 sphere_positions[] = {
-    vec3(0,20,0), vec3(30,20,0)
+    vec3(0,20,0), vec3(30,20,0), vec3(10,15,40)
   };
 
-  float sphere_radiuses[] = { 10, 20 };
+  float sphere_radiuses[] = { 10, 20, 15 };
 
   Transform transforms[] = {
     Transform(sphere_positions[0], quat(1,0,0,0), vec3(sphere_radiuses[0])),
-    Transform(sphere_positions[1], quat(1,0,0,0), vec3(sphere_radiuses[1]))
+    Transform(sphere_positions[1], quat(1,0,0,0), vec3(sphere_radiuses[1])),
+    Transform(sphere_positions[2], quat(1,0,0,0), vec3(sphere_radiuses[2]))
   };
 
   vec3 colors[] = {
-    vec3(1,0,1), vec3(0,1,0)
+    vec3(1,0,1), vec3(0,1,0), vec3(0,1,1)
   };
 
-  pass->updateFloatArray("radiuses", sphere_radiuses, 2);
-  pass->updateVec3Array("positions", sphere_positions, 2);
+  pass->updateFloatArray("radiuses", sphere_radiuses, num_sph);
+  pass->updateVec3Array("positions", sphere_positions, num_sph);
 
   Transform plane_transform(vec3(0,0,0),quat(1,0,0,0),vec3(200));
 
@@ -110,7 +113,7 @@ int main()
     glViewport(0, 0, 640, 480);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-    for (int i = 0; i < 2; i++)
+    for (int i = 0; i < num_sph; i++)
     {
       pass->updateMat4("world", transforms[i].world());
       pass->updateVec3("color", colors[i]);
