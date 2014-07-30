@@ -23,4 +23,5 @@ main
 gen_coeffs
 
 *.dSYM
+sh_functions.h
 sh_functions.cpp

@@ -49,7 +49,7 @@ void mouse_callback(GLFWwindow *window, double x, double y)
 
 int main()
 {
-  int n_points = 100;
+  int n_points = 50;
   int lut_size = n_points*N_BANDS*N_BANDS;
   double* sh_logs = new double[lut_size];
   float* sh_logs_f = new float[lut_size];
@@ -100,18 +100,26 @@ int main()
     vec3(1,0,1), vec3(0,1,0), vec3(0,1,1)
   };
 
-  pass->updateFloatArray("radiuses", sphere_radiuses, num_sph);
-  pass->updateVec3Array("positions", sphere_positions, num_sph);
 
   Transform plane_transform(vec3(0,0,0),quat(1,0,0,0),vec3(200));
 
+  float x = 0.0f;
+
   while (!glfwWindowShouldClose(gfx.window()))
   {
+    x += 0.01f;
+
     handleInput(gfx.window());
     pass->updateMat4("view", camera.getView());
 
     glViewport(0, 0, 640, 480);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+    sphere_positions[0] = vec3(0,10+10*sin(x),0);
+    transforms[0].set_translation(sphere_positions[0]);
+
+    pass->updateFloatArray("radiuses", sphere_radiuses, num_sph);
+    pass->updateVec3Array("positions", sphere_positions, num_sph);
 
     for (int i = 0; i < num_sph; i++)
     {
