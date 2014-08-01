@@ -49,7 +49,7 @@ void mouse_callback(GLFWwindow *window, double x, double y)
 
 int main()
 {
-  int n_points = 50;
+  int n_points = 10;
   int lut_size = n_points*N_BANDS*N_BANDS;
   double* sh_logs = new double[lut_size];
   float* sh_logs_f = new float[lut_size];
@@ -99,7 +99,6 @@ int main()
   vec3 colors[] = {
     vec3(1,0,1), vec3(0,1,0), vec3(0,1,1)
   };
-
 
   Transform plane_transform(vec3(0,0,0),quat(1,0,0,0),vec3(200));
 

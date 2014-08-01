@@ -5,7 +5,7 @@ layout (location = 0) out vec4 out_color;
 
 const int N = 3;
 const int N_COEFF = 9;
-const int LUT_SIZE = 50;
+const int LUT_SIZE = 10;
 
 in vec3 v_position;
 in vec3 v_normal;
@@ -78,7 +78,7 @@ void main()
     vec3 v = positions[i] - v_position;
     float d = length(v);
     float ar = angular_radius(d, radiuses[i]);
-    int lut_index = int(clamp(ar/PI,0,1)*LUT_SIZE)*N_COEFF;
+    int lut_index = int(clamp(ar/(PI*0.5),0,1)*LUT_SIZE)*N_COEFF;
     float[N_COEFF] log_coeff;
     for (int j = 0; j < N_COEFF; j++)
     {
@@ -89,6 +89,10 @@ void main()
     {
       acc_coeff[j] += rlog_coeff[j];
     }
+  }
+  for (int i = 0; i < N_COEFF; i++)
+  {
+    acc_coeff[i] += sh_lut[(LUT_SIZE-1)*N_COEFF+i];
   }
   acc_coeff[0] += sqrt(4*PI);
 

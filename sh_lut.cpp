@@ -41,7 +41,7 @@ void SH_make_lut(double* data, int n_points)
 
   for (int i = 0; i < n_points; i++)
   {
-    double t = ((double)i/(double)n_points)*M_PI;
+    double t = ((double)i/(double)n_points)*(M_PI*0.5);
 
     slices[i] = new double[N_COEFFS];
     SH_project_polar_function(
