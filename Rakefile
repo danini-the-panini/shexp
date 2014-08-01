@@ -20,6 +20,7 @@ LDFLAGS = "#{LDLIBS} -g"
 RPP = RPlusPlus::Environment.new
 
 BUILDS = RPP.builds
+BUILDS['main'] += ['sh_lut.txt']
 OBJECTS = RPP.objects
 ERBS = RPP.erbs
 ERB_TARGETS = ERBS.keys
@@ -28,6 +29,7 @@ ERBS.delete 'sh_functions.cpp'
 CLOBBER.include(*OBJECTS.keys, *BUILDS.keys, ERB_TARGETS)
 
 SH_BANDS = 3
+LUT_SIZE = 10
 
 task :default => 'main'
 
@@ -68,5 +70,9 @@ BUILDS.each do |target, objects|
   file target => objects do |t|
     build target, objects
   end
+end
+
+file 'sh_lut.txt' => 'sh_lut' do
+  sh "./sh_lut #{LUT_SIZE} > sh_lut.txt"
 end
 

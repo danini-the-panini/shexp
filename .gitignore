@@ -25,3 +25,4 @@ gen_coeffs
 *.dSYM
 sh_functions.h
 sh_functions.cpp
+sh_lut.txt

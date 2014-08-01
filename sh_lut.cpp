@@ -88,3 +88,24 @@ void SH_make_lut(double* data, int n_points)
   delete [] slices;
   delete [] temp_matrix;
 }
+
+int main(int argc, char** argv)
+{
+  int lut_size = argc > 1 ? atoi(argv[1]) : 10;
+  int sh_lut_size = N_COEFFS*lut_size;
+
+  double* sh_logs = new double[sh_lut_size];
+
+  SH_make_lut(sh_logs, lut_size);
+
+  cout << lut_size << endl;
+
+  for (int i = 0; i < sh_lut_size; i++)
+  {
+    cout << sh_logs[i] << " ";
+  }
+
+  delete [] sh_logs;
+
+  return 0;
+}

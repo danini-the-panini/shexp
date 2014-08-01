@@ -1,8 +1,8 @@
 #include <cstdlib>
 #include <iostream>
+#include <fstream>
 
 #include "gfx_boilerplate.h"
-#include "sh_lut.h"
 #include "sh_functions.h"
 #include "shader.h"
 #include "sphere.h"
@@ -47,17 +47,31 @@ void mouse_callback(GLFWwindow *window, double x, double y)
   my = y;
 }
 
-int main()
+int main(int argc, char** argv)
 {
-  int n_points = 10;
-  int lut_size = n_points*N_BANDS*N_BANDS;
-  double* sh_logs = new double[lut_size];
-  float* sh_logs_f = new float[lut_size];
+  int n = N_BANDS;
+  ifstream in(argc > 1 ? argv[0] : "sh_lut.txt");
+  if (!in)
+  {
+    cout << "Error loading file" << endl;
+    return 1;
+  }
+  int lut_size;
+  in >> lut_size;
+  cout << lut_size << endl;
+  float* sh_logs = new float[lut_size*n*n];
 
-  SH_make_lut(sh_logs, n_points);
+  double tmp;
+  for (int i = 0; i < lut_size*n*n; i++)
+  {
+    in >> tmp;
+    cout << tmp << " ";
+    sh_logs[i] = static_cast<float>(tmp);
+  }
+  cout << endl;
 
   for (int i = 0; i < lut_size; i++)
-    sh_logs_f[i] = (float)sh_logs[i];
+    sh_logs[i] = (float)sh_logs[i];
 
   GFXBoilerplate gfx;
   gfx.init();
@@ -80,25 +94,29 @@ int main()
   pass->use();
   pass->updateMat4("projection",
       infinitePerspective(45.0f, 640.0f/480.0f, 0.1f));
-  pass->updateFloatArray("sh_lut", sh_logs_f, lut_size);
+  pass->updateFloatArray("sh_lut", sh_logs, lut_size*n*n);
 
   int num_sph = 3;
 
-  vec3 sphere_positions[] = {
-    vec3(0,20,0), vec3(30,20,0), vec3(10,15,40)
-  };
+  vector<vec3> sphere_positions;
+  sphere_positions.push_back(vec3(0,20,0));
+  sphere_positions.push_back(vec3(30,20,0));
+  sphere_positions.push_back(vec3(10,15,40));
 
-  float sphere_radiuses[] = { 10, 20, 15 };
+  vector<float> sphere_radiuses;
+  sphere_radiuses.push_back(10);
+  sphere_radiuses.push_back(20);
+  sphere_radiuses.push_back(15);
 
-  Transform transforms[] = {
-    Transform(sphere_positions[0], quat(1,0,0,0), vec3(sphere_radiuses[0])),
-    Transform(sphere_positions[1], quat(1,0,0,0), vec3(sphere_radiuses[1])),
-    Transform(sphere_positions[2], quat(1,0,0,0), vec3(sphere_radiuses[2]))
-  };
+  vector<Transform> transforms;
+  transforms.push_back(Transform(sphere_positions[0], quat(1,0,0,0), vec3(sphere_radiuses[0])));
+  transforms.push_back(Transform(sphere_positions[1], quat(1,0,0,0), vec3(sphere_radiuses[1])));
+  transforms.push_back(Transform(sphere_positions[2], quat(1,0,0,0), vec3(sphere_radiuses[2])));
 
-  vec3 colors[] = {
-    vec3(1,0,1), vec3(0,1,0), vec3(0,1,1)
-  };
+  vector<vec3> colors;
+  colors.push_back(vec3(1,0,1));
+  colors.push_back(vec3(0,1,0));
+  colors.push_back(vec3(0,1,1));
 
   Transform plane_transform(vec3(0,0,0),quat(1,0,0,0),vec3(200));
 
@@ -114,11 +132,11 @@ int main()
     glViewport(0, 0, 640, 480);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-    sphere_positions[0] = vec3(0,10+10*sin(x),0);
+    sphere_positions[0] = vec3(0,15+10*sin(x),0);
     transforms[0].set_translation(sphere_positions[0]);
 
-    pass->updateFloatArray("radiuses", sphere_radiuses, num_sph);
-    pass->updateVec3Array("positions", sphere_positions, num_sph);
+    pass->updateFloatArray("radiuses", sphere_radiuses.data(), num_sph);
+    pass->updateVec3Array("positions", sphere_positions.data(), num_sph);
 
     for (int i = 0; i < num_sph; i++)
     {

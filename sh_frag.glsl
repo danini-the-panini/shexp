@@ -90,10 +90,6 @@ void main()
       acc_coeff[j] += rlog_coeff[j];
     }
   }
-  for (int i = 0; i < N_COEFF; i++)
-  {
-    acc_coeff[i] += sh_lut[(LUT_SIZE-1)*N_COEFF+i];
-  }
   acc_coeff[0] += sqrt(4*PI);
 
   float[N_COEFF] y_norm = y(v_normal);
