@@ -9,6 +9,7 @@
 #include "plane.h"
 #include "camera.h"
 #include "transform.h"
+#include "cube_map.h"
 
 using namespace std;
 
