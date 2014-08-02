@@ -3,9 +3,9 @@
 
 layout (location = 0) out vec4 out_color;
 
-const int N = 3;
+const int N = 4;
 const int N_COEFF = 9;
-const int LUT_SIZE = 10;
+const int LUT_SIZE = 20;
 
 in vec3 v_position;
 in vec3 v_normal;

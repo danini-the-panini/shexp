@@ -96,27 +96,29 @@ int main(int argc, char** argv)
       infinitePerspective(45.0f, 640.0f/480.0f, 0.1f));
   pass->updateFloatArray("sh_lut", sh_logs, lut_size*n*n);
 
-  int num_sph = 3;
-
   vector<vec3> sphere_positions;
   sphere_positions.push_back(vec3(0,20,0));
   sphere_positions.push_back(vec3(30,20,0));
   sphere_positions.push_back(vec3(10,15,40));
+  sphere_positions.push_back(vec3(30,41,0));
 
   vector<float> sphere_radiuses;
   sphere_radiuses.push_back(10);
   sphere_radiuses.push_back(20);
   sphere_radiuses.push_back(15);
-
-  vector<Transform> transforms;
-  transforms.push_back(Transform(sphere_positions[0], quat(1,0,0,0), vec3(sphere_radiuses[0])));
-  transforms.push_back(Transform(sphere_positions[1], quat(1,0,0,0), vec3(sphere_radiuses[1])));
-  transforms.push_back(Transform(sphere_positions[2], quat(1,0,0,0), vec3(sphere_radiuses[2])));
+  sphere_radiuses.push_back(2);
 
   vector<vec3> colors;
   colors.push_back(vec3(1,0,1));
   colors.push_back(vec3(0,1,0));
   colors.push_back(vec3(0,1,1));
+  colors.push_back(vec3(1,1,0));
+
+  vector<Transform> transforms;
+  for (int i = 0; i < sphere_positions.size(); i++)
+  {
+    transforms.push_back(Transform(sphere_positions[i], quat(1,0,0,0),vec3(sphere_radiuses[i])));
+  }
 
   Transform plane_transform(vec3(0,0,0),quat(1,0,0,0),vec3(200));
 
@@ -132,13 +134,13 @@ int main(int argc, char** argv)
     glViewport(0, 0, 640, 480);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-    sphere_positions[0] = vec3(0,15+10*sin(x),0);
+    sphere_positions[0] = vec3(0,5+10*sin(x),0);
     transforms[0].set_translation(sphere_positions[0]);
 
-    pass->updateFloatArray("radiuses", sphere_radiuses.data(), num_sph);
-    pass->updateVec3Array("positions", sphere_positions.data(), num_sph);
+    pass->updateFloatArray("radiuses", sphere_radiuses.data(), sphere_radiuses.size());
+    pass->updateVec3Array("positions", sphere_positions.data(), sphere_positions.size());
 
-    for (int i = 0; i < num_sph; i++)
+    for (int i = 0; i < sphere_positions.size(); i++)
     {
       pass->updateMat4("world", transforms[i].world());
       pass->updateVec3("color", colors[i]);
