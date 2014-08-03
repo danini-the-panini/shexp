@@ -21,6 +21,7 @@
 *.app
 main
 gen_coeffs
+sh_lut
 
 *.dSYM
 sh_functions.h
