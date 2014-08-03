@@ -1,8 +1,8 @@
 #include "cube_map.h"
 
 CubeMap::
-CubeMap(GLenum target)
-  : Texture(target)
+CubeMap()
+  : Texture(GL_TEXTURE_CUBE_MAP)
 {
 }
 

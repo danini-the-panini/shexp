@@ -6,7 +6,7 @@
 class CubeMap : public Texture
 {
 public:
-  CubeMap(GLenum);
+  CubeMap();
   ~CubeMap();
 
   virtual void load_cube(float**, GLsizei, GLsizei);
