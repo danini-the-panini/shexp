@@ -66,6 +66,22 @@ float angular_radius(float d, float r)
   return asin(r/d);
 }
 
+float[N_COEFF] get_coeff(vec3 v, float radius)
+{
+  float d = length(v);
+  float ar = angular_radius(d, radius);
+  float fi = clamp(ar/(PI*0.5),0,1)*LUT_SIZE;
+  int ii = int(fi);
+  float btw = fi-float(ii);
+  int lut_index = ii*N_COEFF;
+  float[N_COEFF] log_coeff;
+  for (int j = 0; j < N_COEFF; j++)
+  {
+    log_coeff[j] = mix(sh_lut[j+lut_index], sh_lut[j+lut_index+N_COEFF], btw);
+  }
+  return rotate_to(log_coeff, normalize(v));
+}
+
 void main()
 {
   float[N_COEFF] acc_coeff;
@@ -76,22 +92,16 @@ void main()
   for (int i = 0; i < N; i++)
   {
     vec3 v = positions[i] - v_position;
-    float d = length(v);
-    float ar = angular_radius(d, radiuses[i]);
-    float fi = clamp(ar/(PI*0.5),0,1)*LUT_SIZE;
-    int ii = int(fi);
-    float btw = fi-float(ii);
-    int lut_index = ii*N_COEFF;
-    float[N_COEFF] log_coeff;
-    for (int j = 0; j < N_COEFF; j++)
-    {
-      log_coeff[j] = mix(sh_lut[j+lut_index], sh_lut[j+lut_index+N_COEFF], btw);
-    }
-    float[N_COEFF] rlog_coeff = rotate_to(log_coeff, normalize(v));
+    float[N_COEFF] rlog_coeff = get_coeff(v, radiuses[i]);
     for (int j = 0; j < N_COEFF; j++)
     {
       acc_coeff[j] += rlog_coeff[j];
     }
+  }
+  float[N_COEFF] rlog_coeff = get_coeff(vec3(0,-abs(v_position.y+9.99),0), 10);
+  for (int j = 0; j < N_COEFF; j++)
+  {
+    acc_coeff[j] += rlog_coeff[j];
   }
   acc_coeff[0] += sqrt(4*PI);
 
