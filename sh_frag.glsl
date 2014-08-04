@@ -98,6 +98,6 @@ void main()
   float[N_COEFF] y_norm = y(v_normal);
   float ip = dot_sh(acc_coeff, y_norm);
 
-  out_color = vec4(color * pow(ip,20), 1);
+  out_color = vec4(color * pow(ip,10), 1);
 }
 
