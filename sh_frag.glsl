@@ -3,7 +3,7 @@
 
 layout (location = 0) out vec4 out_color;
 
-const int N = 4;
+const int N = 17;
 const int N_COEFF = 9;
 const int LUT_SIZE = 10;
 

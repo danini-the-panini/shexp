@@ -98,22 +98,25 @@ int main(int argc, char** argv)
   pass->updateFloatArray("sh_lut", sh_logs, lut_size*n*n);
 
   vector<vec3> sphere_positions;
-  sphere_positions.push_back(vec3(0,20,0));
-  sphere_positions.push_back(vec3(30,20,0));
-  sphere_positions.push_back(vec3(10,15,40));
-  sphere_positions.push_back(vec3(30,41,0));
-
-  vector<float> sphere_radiuses;
-  sphere_radiuses.push_back(10);
-  sphere_radiuses.push_back(20);
-  sphere_radiuses.push_back(15);
-  sphere_radiuses.push_back(2);
-
+  vector<GLfloat> sphere_radiuses;
   vector<vec3> colors;
-  colors.push_back(vec3(1,0,1));
-  colors.push_back(vec3(0,1,0));
+
+  sphere_positions.push_back(vec3(0,20,0));
+  sphere_radiuses.push_back(20.0f);
   colors.push_back(vec3(0,1,1));
-  colors.push_back(vec3(1,1,0));
+
+  const GLuint segments = 16;
+  const GLfloat rad_per_lng = (2.f*(GLfloat)M_PI) / (GLfloat)segments;
+  for (int i = 0; i < segments; i++)
+  {
+    sphere_positions.push_back(vec3(
+          50.0 * cos(i * rad_per_lng),
+          6.0,
+          50.0 * sin(i * rad_per_lng)
+          ));
+    sphere_radiuses.push_back(6.0f);
+    colors.push_back(vec3(1,0,1));
+  }
 
   vector<Transform> transforms;
   for (int i = 0; i < sphere_positions.size(); i++)
@@ -135,8 +138,19 @@ int main(int argc, char** argv)
     glViewport(0, 0, 640, 480);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-    sphere_positions[0] = vec3(0,5+10*sin(x),0);
+    sphere_positions[0] = vec3(0,30+10*sin(x),0);
     transforms[0].set_translation(sphere_positions[0]);
+
+    GLfloat sx = (GLfloat)sin(x*2);
+    for (int i = 0; i < segments; i++)
+    {
+      sphere_positions[i+1] = vec3(
+          (50.0+20*sx) * cos(i * rad_per_lng),
+          6.0,
+          (50.0+20*sx) * sin(i * rad_per_lng)
+        );
+      transforms[i+1].set_translation(sphere_positions[i+1]);
+    }
 
     pass->updateFloatArray("radiuses", sphere_radiuses.data(), sphere_radiuses.size());
     pass->updateVec3Array("positions", sphere_positions.data(), sphere_positions.size());
