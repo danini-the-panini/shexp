@@ -10,6 +10,7 @@
 #include "camera.h"
 #include "transform.h"
 #include "cube_map.h"
+#include "green.h"
 
 using namespace std;
 
@@ -62,6 +63,63 @@ int main(int argc, char** argv)
   cout << lut_size << endl;
   float* sh_logs = new float[lut_size*n*n];
 
+  double *light_coeff = new double[N_BANDS*N_BANDS];
+  const int SQRT_N_SAMPLES = 1000;
+  const int N_SAMPLES = SQRT_N_SAMPLES*SQRT_N_SAMPLES;
+  SHSample* samples = new SHSample[N_SAMPLES];
+  for (int i = 0; i < N_SAMPLES; i++)
+  {
+    samples[i].coeff = new double[N_COEFFS];
+  }
+  SH_setup_spherical_samples(samples, SQRT_N_SAMPLES, N_BANDS);
+
+  SH_project_polar_function([&](double theta, double phi) {
+      return 120000.0 * (1.0 + 2.0*sin(theta))/3.0;
+    }, samples, N_SAMPLES, N_BANDS, light_coeff);
+
+  const int CUBE_MAP_SIZE = 128;
+  const int N_CUBE_MAPS = (N_BANDS*N_BANDS)/3+(N_BANDS%3?1:0);
+
+  CubeMap h_maps[N_CUBE_MAPS];
+  float h_data[N_CUBE_MAPS][6][CUBE_MAP_SIZE*CUBE_MAP_SIZE*3];
+
+  for (int i = 0; i < CUBE_MAP_SIZE; i++)
+  {
+    for (int j = 0; j < CUBE_MAP_SIZE; j++)
+    {
+      float u = ((float)j/(float)CUBE_MAP_SIZE)*2.0f-1.0f;
+      float v = ((float)i/(float)CUBE_MAP_SIZE)*2.0f-1.0f;
+
+      vec3 d[6] = {
+        vec3( 1, -v, -u),
+        vec3( u,  1,  v),
+        vec3( u, -v,  1),
+        vec3(-1, -v,  u),
+        vec3( u, -1, -v),
+        vec3(-u, -v, -1)
+      };
+
+      for (int k = 0; k < 6; k++)
+      {
+        double theta = acos(d[k].z);
+        double phi = atan2(d[k].y,d[k].x);
+
+        for(int l=0; l<N_BANDS; ++l) {
+          for(int m=-l; m<=l; ++m) {
+            int index = l*(l+1)+m;
+            h_data[index/3][k][(i*CUBE_MAP_SIZE*3+j*3)+index%3] = (float)SH(l,m,theta,phi);
+          }
+        }
+      }
+    }
+  }
+
+  for (int i = 0; i < N_CUBE_MAPS; i++)
+  {
+    h_maps[i].build();
+    h_maps[i].load_cube((const float **)(h_data[i]), CUBE_MAP_SIZE, CUBE_MAP_SIZE);
+  }
+
   double tmp;
   for (int i = 0; i < lut_size*n*n; i++)
   {
@@ -85,6 +143,14 @@ int main(int argc, char** argv)
     ->vertex("simple_vert.glsl")
     ->fragment("sh_frag.glsl")
     ->build();
+
+  char str[11];
+  for (int i = 0; i < N_CUBE_MAPS; i++)
+  {
+    sprintf(str,"h_maps[%d]", i);
+    pass->updateInt(str, i);
+    h_maps[i].use(GL_TEXTURE0+i);
+  }
 
   Sphere sph;
   sph.build();

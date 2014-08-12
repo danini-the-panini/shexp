@@ -1,4 +1,4 @@
-#version 330
+#version 440
 
 uniform mat4 world;
 uniform mat4 view;

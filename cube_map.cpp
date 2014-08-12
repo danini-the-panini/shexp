@@ -12,7 +12,7 @@ CubeMap::
 }
 
 void CubeMap::
-load_cube(float ** data, GLsizei width, GLsizei height)
+load_cube(const float **data, GLsizei width, GLsizei height)
 {
   glTexParameteri(
           GL_TEXTURE_CUBE_MAP,

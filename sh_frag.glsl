@@ -1,4 +1,4 @@
-#version 330
+#version 440
 #define PI (3.1415926535897932384626433832795)
 
 layout (location = 0) out vec4 out_color;
@@ -14,6 +14,28 @@ uniform vec3 color;
 uniform float radiuses[N];
 uniform vec3 positions[N];
 uniform float sh_lut[N_COEFF*LUT_SIZE];
+
+uniform samplerCube h_maps[3];
+
+float[N_COEFF] h(vec3 v)
+{
+  float[N_COEFF] result;
+
+  vec4 a = texture(h_maps[0], v);
+  result[0] = a.r;
+  result[1] = a.g;
+  result[2] = a.b;
+  vec4 b = texture(h_maps[1], v);
+  result[3] = b.r;
+  result[4] = b.g;
+  result[5] = b.b;
+  vec4 c = texture(h_maps[2], v);
+  result[6] = c.r;
+  result[7] = c.g;
+  result[8] = c.b;
+
+  return result;
+}
 
 // assume v is normalized!
 float[N_COEFF] y(vec3 v)
@@ -98,14 +120,9 @@ void main()
       acc_coeff[j] += rlog_coeff[j];
     }
   }
-  float[N_COEFF] rlog_coeff = get_coeff(vec3(0,-abs(v_position.y+9.99),0), 10);
-  for (int j = 0; j < N_COEFF; j++)
-  {
-    acc_coeff[j] += rlog_coeff[j];
-  }
   acc_coeff[0] += sqrt(4*PI);
 
-  float[N_COEFF] y_norm = y(v_normal);
+  float[N_COEFF] y_norm = h(v_normal);
   float ip = dot_sh(acc_coeff, y_norm);
 
   out_color = vec4(color * pow(ip,10), 1);
