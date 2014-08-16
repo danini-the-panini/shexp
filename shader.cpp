@@ -197,6 +197,12 @@ updateInt(const char* name, int v)
   if (x != -1) glUniform1i(x,v);
 }
 void Shader::
+updateInts(const char* name, int *v, int size)
+{
+  GLint x = findUniform(name);
+  if (x != -1) glUniform1iv(x,size,v);
+}
+void Shader::
 updateVec3(const char* name, vec3 v)
 {
   GLint x = findUniform(name);

@@ -164,24 +164,28 @@ int main(int argc, char** argv)
   }
   cout << "done." << endl;
 
+  GFXBoilerplate gfx;
+  gfx.init();
+
+  cout << " * Loading maps into textures ... ";
+  GLint indices[N_COEFFS];
+  for (int i = 0; i < N_COEFFS; i++)
+  {
+    indices[i] = i;
+    h_maps[i].build();
+    h_maps[i].load_cube((const float **)(h_data[i]), CUBE_MAP_SIZE, CUBE_MAP_SIZE,
+        GL_R32F, GL_RED, GL_FLOAT);
+    h_maps[i].use(GL_TEXTURE0+i);
+  }
+  cout << "done." << endl;
+
   delete [] light_coeff;
   delete [] h_coeff;
   delete [] l_coeff;
 
-  cout << " * Loading maps into textures ... ";
-  for (int i = 0; i < N_COEFFS; i++)
-  {
-    h_maps[i].build();
-    h_maps[i].load_cube((const float **)(h_data[i]), CUBE_MAP_SIZE, CUBE_MAP_SIZE,
-        GL_R32F, GL_RED, GL_FLOAT);
-  }
-  cout << "done." << endl;
-
   cout << "done." << endl;
 
   ///////////////// DO THE OPENGL THING ////////////////
-  GFXBoilerplate gfx;
-  gfx.init();
 
   glEnable(GL_DEPTH_TEST);
 
@@ -197,13 +201,6 @@ int main(int argc, char** argv)
     ->fragment("skybox_frag.glsl")
     ->build();
 
-  char str[11];
-  for (int i = 0; i < N_COEFFS; i++)
-  {
-    sprintf(str,"h_maps[%d]", i);
-    pass->updateInt(str, i);
-    h_maps[i].use(GL_TEXTURE0+i);
-  }
 
   Sphere sph;
   sph.build();
@@ -212,6 +209,7 @@ int main(int argc, char** argv)
   pln.build();
 
   pass->use();
+  pass->updateInts("h_maps", indices, N_COEFFS);
   pass->updateMat4("projection",
       infinitePerspective(45.0f, 640.0f/480.0f, 0.1f));
   pass->updateFloatArray("sh_lut", sh_logs, lut_size*n*n);

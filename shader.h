@@ -31,6 +31,7 @@ public:
   void updateFloat(const char* name, float);
   void updateFloatArray(const char* name, float*, int);
   void updateInt(const char* name, int);
+  void updateInts(const char* name, int*, int);
   void updateVec3(const char* name, vec3 v);
   void updateVec4(const char* name, vec4 v);
   void updateVec3Array(const char* name, const vec3* v, int size);
