@@ -23,7 +23,7 @@ float[N_COEFF] lh(vec3 v)
 
   for (int i = 0; i < N_COEFF; i++)
   {
-    result[i] = texture(h_maps[i], v).r;
+    result[i] = texture(h_maps[i], v);
   }
 
   return result;
@@ -118,7 +118,5 @@ void main()
   float ip = dot_sh(acc_coeff, y_norm);
 
   out_color = vec4(color * pow(ip,10), 1);
-
-  out_color = vec4(color * texture(h_maps[0], v_normal).r, 1);
 }
 

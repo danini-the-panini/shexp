@@ -49,40 +49,71 @@ void mouse_callback(GLFWwindow *window, double x, double y)
   my = y;
 }
 
+template < typename T >
+T dot_polar(T theta1, T phi1, T theta2, T phi2)
+{
+  return sin(phi1) * sin(phi2) * cos(theta1-theta2) + cos(phi1) * cos(phi2);
+}
+
 int main(int argc, char** argv)
 {
+  ////////////// LOAD SH LUT //////////////
+  cout << "Loading SH LUT ... " << endl;
+
   int n = N_BANDS;
   ifstream in(argc > 1 ? argv[0] : "sh_lut.txt");
   if (!in)
   {
-    cout << "Error loading file" << endl;
+    cout << "Error loading file " << (argc > 1 ? argv[0] : "sh_lut.txt") << endl;
     return 1;
   }
   int lut_size;
   in >> lut_size;
-  cout << lut_size << endl;
   float* sh_logs = new float[lut_size*n*n];
 
-  double *light_coeff = new double[N_BANDS*N_BANDS];
-  const int SQRT_N_SAMPLES = 1000;
+  double tmp;
+  for (int i = 0; i < lut_size*n*n; i++)
+  {
+    in >> tmp;
+    sh_logs[i] = static_cast<float>(tmp);
+  }
+
+  for (int i = 0; i < lut_size; i++)
+    sh_logs[i] = (float)sh_logs[i];
+
+  cout << "done." << endl;
+
+  ////////////// GENERATE LH CUBEMAPS ////////////
+  cout << "Loading LH CUBEMAPS ... " << endl;
+
+  const int SQRT_N_SAMPLES = 100;
   const int N_SAMPLES = SQRT_N_SAMPLES*SQRT_N_SAMPLES;
   SHSample* samples = new SHSample[N_SAMPLES];
   for (int i = 0; i < N_SAMPLES; i++)
   {
     samples[i].coeff = new double[N_COEFFS];
   }
+  cout << " * Generating SH samples ... ";
   SH_setup_spherical_samples(samples, SQRT_N_SAMPLES, N_BANDS);
+  cout << "done." << endl;
 
-  SH_project_polar_function([&](double theta, double phi) {
-      return 120000.0 * (1.0 + 2.0*sin(theta))/3.0;
-    }, samples, N_SAMPLES, N_BANDS, light_coeff);
+  cout << " * Allocating ... " << endl;
+  cout << "   - light_coeff" << endl;
+  double *light_coeff = new double[N_COEFFS];
+  cout << "   - h_coeff" << endl;
+  double *h_coeff = new double[N_COEFFS];
+  cout << "   - l_coeff" << endl;
+  double *l_coeff = new double[N_COEFFS];
 
-  const int CUBE_MAP_SIZE = 128;
-  const int N_CUBE_MAPS = (N_BANDS*N_BANDS)/3+(N_BANDS%3?1:0);
+  const int CUBE_MAP_SIZE = 32;
 
-  CubeMap h_maps[N_CUBE_MAPS];
-  float h_data[N_CUBE_MAPS][6][CUBE_MAP_SIZE*CUBE_MAP_SIZE*3];
+  cout << "   - h_maps" << endl;
+  CubeMap h_maps[N_COEFFS];
+  cout << "   - h_data" << endl;
+  float h_data[N_COEFFS][6][CUBE_MAP_SIZE*CUBE_MAP_SIZE];
+  cout << " done." << endl;
 
+  cout << " * Generating data ... \033[s";
   for (int i = 0; i < CUBE_MAP_SIZE; i++)
   {
     for (int j = 0; j < CUBE_MAP_SIZE; j++)
@@ -101,37 +132,54 @@ int main(int argc, char** argv)
 
       for (int k = 0; k < 6; k++)
       {
-        double theta = acos(d[k].z);
-        double phi = atan2(d[k].y,d[k].x);
+        cout << "\t( " << i << ", " << j << ", " << k << " )";
+
+        double n_theta = acos(d[k].z);
+        double n_phi = atan2(d[k].y,d[k].x);
+
+        //SH_project_polar_function([&](double theta, double phi) {
+            //return 120000.0 * (1.0 + 2.0*sin(theta))/3.0;
+          //}, samples, N_SAMPLES, N_BANDS, light_coeff);
+
+        //SH_project_polar_function([&](double s_theta, double s_phi) {
+            //return dot_polar(s_theta, s_phi, n_theta, n_phi);
+          //}, samples, N_SAMPLES, N_BANDS, h_coeff);
+
+        //SH_product(light_coeff, h_coeff, l_coeff);
 
         for(int l=0; l<N_BANDS; ++l) {
           for(int m=-l; m<=l; ++m) {
             int index = l*(l+1)+m;
-            h_data[index/3][k][(i*CUBE_MAP_SIZE*3+j*3)+index%3] = (float)SH(l,m,theta,phi);
+            h_data[index][k][i*CUBE_MAP_SIZE+j] = (float)i/(float)CUBE_MAP_SIZE;//(float)SH(l,m,n_theta,n_phi);
           }
         }
+
+        //for(int index=0; index < N_COEFFS; ++index) {
+          //h_data[index][k][i*CUBE_MAP_SIZE+j] = l_coeff[index];
+        //}
+
+        cout << "\033[u\033[K";
       }
     }
   }
+  cout << "done." << endl;
 
-  for (int i = 0; i < N_CUBE_MAPS; i++)
+  delete [] light_coeff;
+  delete [] h_coeff;
+  delete [] l_coeff;
+
+  cout << " * Loading maps into textures ... ";
+  for (int i = 0; i < N_COEFFS; i++)
   {
     h_maps[i].build();
-    h_maps[i].load_cube((const float **)(h_data[i]), CUBE_MAP_SIZE, CUBE_MAP_SIZE);
+    h_maps[i].load_cube((const float **)(h_data[i]), CUBE_MAP_SIZE, CUBE_MAP_SIZE,
+        GL_R32F, GL_RED, GL_FLOAT);
   }
+  cout << "done." << endl;
 
-  double tmp;
-  for (int i = 0; i < lut_size*n*n; i++)
-  {
-    in >> tmp;
-    cout << tmp << " ";
-    sh_logs[i] = static_cast<float>(tmp);
-  }
-  cout << endl;
+  cout << "done." << endl;
 
-  for (int i = 0; i < lut_size; i++)
-    sh_logs[i] = (float)sh_logs[i];
-
+  ///////////////// DO THE OPENGL THING ////////////////
   GFXBoilerplate gfx;
   gfx.init();
 
@@ -144,8 +192,13 @@ int main(int argc, char** argv)
     ->fragment("sh_frag.glsl")
     ->build();
 
+  Shader* skybox = (new Shader())
+    ->vertex("skybox_vert.glsl")
+    ->fragment("skybox_frag.glsl")
+    ->build();
+
   char str[11];
-  for (int i = 0; i < N_CUBE_MAPS; i++)
+  for (int i = 0; i < N_COEFFS; i++)
   {
     sprintf(str,"h_maps[%d]", i);
     pass->updateInt(str, i);

@@ -9,7 +9,7 @@ public:
   CubeMap();
   ~CubeMap();
 
-  virtual void load_cube(const float **, GLsizei, GLsizei);
+  virtual void load_cube(const float **, GLsizei, GLsizei, GLint internalFormat, GLenum format, GLenum type);
   virtual void build_impl();
 
 protected:
