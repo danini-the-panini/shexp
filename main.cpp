@@ -110,7 +110,15 @@ int main(int argc, char** argv)
   cout << "   - h_maps" << endl;
   CubeMap h_maps[N_COEFFS];
   cout << "   - h_data" << endl;
-  float h_data[N_COEFFS][6][CUBE_MAP_SIZE*CUBE_MAP_SIZE];
+  float **h_data[N_COEFFS];
+  for (int i = 0; i < N_COEFFS; i++)
+  {
+    h_data[i] = new float*[6];
+    for (int j = 0; j < 6; j++)
+    {
+      h_data[i][j] = new float[CUBE_MAP_SIZE*CUBE_MAP_SIZE];
+    }
+  }
   cout << " done." << endl;
 
   cout << " * Generating data ... \033[s";
@@ -147,16 +155,16 @@ int main(int argc, char** argv)
 
         //SH_product(light_coeff, h_coeff, l_coeff);
 
-        //for(int l=0; l<N_BANDS; ++l) {
-          //for(int m=-l; m<=l; ++m) {
-            //int index = l*(l+1)+m;
-            //h_data[index][k][i*CUBE_MAP_SIZE+j] = (float)(i*CUBE_MAP_SIZE+j)/(float)(CUBE_MAP_SIZE*CUBE_MAP_SIZE);//(float)SH(l,m,n_theta,n_phi);
-          //}
-        //}
-
-        for(int index=0; index < N_COEFFS; ++index) {
-          h_data[index][k][i*CUBE_MAP_SIZE+j] = (float)(i*CUBE_MAP_SIZE+j)/(float)(CUBE_MAP_SIZE*CUBE_MAP_SIZE);//l_coeff[index];
+        for(int l=0; l<N_BANDS; ++l) {
+          for(int m=-l; m<=l; ++m) {
+            int index = l*(l+1)+m;
+            h_data[index][k][i*CUBE_MAP_SIZE+j] = (float)SH(l,m,n_theta,n_phi);
+          }
         }
+
+        //for(int index=0; index < N_COEFFS; ++index) {
+          //h_data[index][k][i*CUBE_MAP_SIZE+j] = l_coeff[index];
+        //}
 
         cout << "\033[u\033[K";
       }
@@ -173,7 +181,7 @@ int main(int argc, char** argv)
   {
     indices[i] = i;
     h_maps[i].build();
-    h_maps[i].load_cube((const float **)(h_data[i]), CUBE_MAP_SIZE, CUBE_MAP_SIZE,
+    h_maps[i].load_cube(h_data[i], CUBE_MAP_SIZE, CUBE_MAP_SIZE,
         GL_R32F, GL_RED, GL_FLOAT);
     h_maps[i].use(GL_TEXTURE0+i);
   }
@@ -182,6 +190,14 @@ int main(int argc, char** argv)
   delete [] light_coeff;
   delete [] h_coeff;
   delete [] l_coeff;
+  for (int i = 0; i < N_COEFFS; i++)
+  {
+    for (int j = 0; j < 6; j++)
+    {
+      delete [] h_data[i][j];
+    }
+    delete [] h_data[i];
+  }
 
   cout << "done." << endl;
 
