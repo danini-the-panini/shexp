@@ -132,7 +132,7 @@ int main(int argc, char** argv)
 
       for (int k = 0; k < 6; k++)
       {
-        cout << "\t( " << i << ", " << j << ", " << k << " )";
+        cout << "( " << i << ", " << j << ", " << k << " )";
 
         double n_theta = acos(d[k].z);
         double n_phi = atan2(d[k].y,d[k].x);
@@ -147,16 +147,16 @@ int main(int argc, char** argv)
 
         //SH_product(light_coeff, h_coeff, l_coeff);
 
-        for(int l=0; l<N_BANDS; ++l) {
-          for(int m=-l; m<=l; ++m) {
-            int index = l*(l+1)+m;
-            h_data[index][k][i*CUBE_MAP_SIZE+j] = (float)i/(float)CUBE_MAP_SIZE;//(float)SH(l,m,n_theta,n_phi);
-          }
-        }
-
-        //for(int index=0; index < N_COEFFS; ++index) {
-          //h_data[index][k][i*CUBE_MAP_SIZE+j] = l_coeff[index];
+        //for(int l=0; l<N_BANDS; ++l) {
+          //for(int m=-l; m<=l; ++m) {
+            //int index = l*(l+1)+m;
+            //h_data[index][k][i*CUBE_MAP_SIZE+j] = (float)(i*CUBE_MAP_SIZE+j)/(float)(CUBE_MAP_SIZE*CUBE_MAP_SIZE);//(float)SH(l,m,n_theta,n_phi);
+          //}
         //}
+
+        for(int index=0; index < N_COEFFS; ++index) {
+          h_data[index][k][i*CUBE_MAP_SIZE+j] = (float)(i*CUBE_MAP_SIZE+j)/(float)(CUBE_MAP_SIZE*CUBE_MAP_SIZE);//l_coeff[index];
+        }
 
         cout << "\033[u\033[K";
       }
