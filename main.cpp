@@ -86,7 +86,7 @@ int main(int argc, char** argv)
   ////////////// GENERATE LH CUBEMAPS ////////////
   cout << "Loading LH CUBEMAPS ... " << endl;
 
-  const int SQRT_N_SAMPLES = 200;
+  const int SQRT_N_SAMPLES = 100;
   const int N_SAMPLES = SQRT_N_SAMPLES*SQRT_N_SAMPLES;
   SHSample* samples = new SHSample[N_SAMPLES];
   for (int i = 0; i < N_SAMPLES; i++)
@@ -109,7 +109,7 @@ int main(int argc, char** argv)
       return (1.0 + 2.0*sin(theta))/3.0;
     }, samples, N_SAMPLES, N_BANDS, light_coeff);
 
-  const int CUBE_MAP_SIZE = 16;
+  const int CUBE_MAP_SIZE = 8;
 
   cout << "   - h_maps" << endl;
   CubeMap h_maps[N_COEFFS];
