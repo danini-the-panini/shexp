@@ -10,6 +10,7 @@ public:
   virtual ~Texture();
   virtual void build();
   virtual void destroy();
+  virtual void bind();
   virtual void use(GLenum);
 
   virtual void build_impl() = 0;

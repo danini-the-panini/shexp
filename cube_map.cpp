@@ -14,6 +14,8 @@ CubeMap::
 void CubeMap::
 load_cube(float **data, GLsizei width, GLsizei height, GLint internalFormat, GLenum format, GLenum type)
 {
+  bind();
+
   glTexParameteri(
           GL_TEXTURE_CUBE_MAP,
           GL_TEXTURE_MAG_FILTER,
@@ -35,10 +37,10 @@ load_cube(float **data, GLsizei width, GLsizei height, GLint internalFormat, GLe
           GL_TEXTURE_WRAP_T,
           GL_CLAMP_TO_EDGE);
 
-  glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
-  glPixelStorei(GL_UNPACK_ROW_LENGTH, 0);
-  glPixelStorei(GL_UNPACK_SKIP_PIXELS, 0);
-  glPixelStorei(GL_UNPACK_SKIP_ROWS, 0);
+  //glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
+  //glPixelStorei(GL_UNPACK_ROW_LENGTH, 0);
+  //glPixelStorei(GL_UNPACK_SKIP_PIXELS, 0);
+  //glPixelStorei(GL_UNPACK_SKIP_ROWS, 0);
 
   for (int i = 0; i < 6; i++)
   {

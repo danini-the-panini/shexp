@@ -105,7 +105,7 @@ int main(int argc, char** argv)
   cout << "   - l_coeff" << endl;
   double *l_coeff = new double[N_COEFFS];
 
-  const int CUBE_MAP_SIZE = 32;
+  const int CUBE_MAP_SIZE = 64;
 
   cout << "   - h_maps" << endl;
   CubeMap h_maps[N_COEFFS];
@@ -122,28 +122,31 @@ int main(int argc, char** argv)
   cout << " done." << endl;
 
   cout << " * Generating data ... \033[s";
+  float GU = CUBE_MAP_SIZE*0.5f;
   for (int i = 0; i < CUBE_MAP_SIZE; i++)
   {
     for (int j = 0; j < CUBE_MAP_SIZE; j++)
     {
-      float u = ((float)j/(float)CUBE_MAP_SIZE)*2.0f-1.0f;
-      float v = ((float)i/(float)CUBE_MAP_SIZE)*2.0f-1.0f;
+      float u = (float)j - GU;
+      float v = (float)i - GU;
 
       vec3 d[6] = {
-        vec3( 1, -v, -u),
-        vec3( u,  1,  v),
-        vec3( u, -v,  1),
-        vec3(-1, -v,  u),
-        vec3( u, -1, -v),
-        vec3(-u, -v, -1)
+        vec3( GU,   v,  -u),
+        vec3(-GU,   v,   u),
+        vec3(  u, -GU,   v),
+        vec3(  u,  GU,  -v),
+        vec3(  u,   v,  GU),
+        vec3( -u,   v, -GU)
       };
 
       for (int k = 0; k < 6; k++)
       {
         cout << "( " << i << ", " << j << ", " << k << " )";
 
-        double n_theta = acos(d[k].z);
-        double n_phi = atan2(d[k].y,d[k].x);
+        double x = d[k].x, y = d[k].y, z = d[k].z;
+
+        double n_theta = atan2(y, sqrt(x*x+z*z));
+        double n_phi = atan2(z, x);
 
         //SH_project_polar_function([&](double theta, double phi) {
             //return 120000.0 * (1.0 + 2.0*sin(theta))/3.0;
@@ -155,11 +158,19 @@ int main(int argc, char** argv)
 
         //SH_product(light_coeff, h_coeff, l_coeff);
 
-        for(int l=0; l<N_BANDS; ++l) {
-          for(int m=-l; m<=l; ++m) {
-            int index = l*(l+1)+m;
-            h_data[index][k][i*CUBE_MAP_SIZE+j] = (float)SH(l,m,n_theta,n_phi);
-          }
+        //for(int l=0; l<N_BANDS; ++l) {
+          //for(int m=-l; m<=l; ++m) {
+            //int index = l*(l+1)+m;
+            //h_data[index][k][i*CUBE_MAP_SIZE+j] = (float)SH(l,m,n_theta,n_phi);
+          //}
+        //}
+
+        h_data[0][k][i*CUBE_MAP_SIZE+j] = x/(float)CUBE_MAP_SIZE + 0.5f;
+        h_data[1][k][i*CUBE_MAP_SIZE+j] = y/(float)CUBE_MAP_SIZE + 0.5f;
+        h_data[2][k][i*CUBE_MAP_SIZE+j] = z/(float)CUBE_MAP_SIZE + 0.5f;
+
+        for(int index=3; index < N_COEFFS; ++index) {
+          h_data[index][k][i*CUBE_MAP_SIZE+j] = 0;//h_data[index-3][k][i*CUBE_MAP_SIZE+j];//l_coeff[index];
         }
 
         //for(int index=0; index < N_COEFFS; ++index) {
@@ -176,14 +187,12 @@ int main(int argc, char** argv)
   gfx.init();
 
   cout << " * Loading maps into textures ... ";
-  GLint indices[N_COEFFS];
   for (int i = 0; i < N_COEFFS; i++)
   {
-    indices[i] = i;
+    glActiveTexture(GL_TEXTURE0+i);
     h_maps[i].build();
     h_maps[i].load_cube(h_data[i], CUBE_MAP_SIZE, CUBE_MAP_SIZE,
         GL_R32F, GL_RED, GL_FLOAT);
-    h_maps[i].use(GL_TEXTURE0+i);
   }
   cout << "done." << endl;
 
@@ -225,7 +234,12 @@ int main(int argc, char** argv)
   pln.build();
 
   pass->use();
-  pass->updateInts("h_maps", indices, N_COEFFS);
+  //char temp[100];
+  //for (int i = 0; i < N_COEFFS; i++)
+  //{
+    //sprintf(temp, "h_maps%d",i);
+    //pass->updateInt(temp, i);
+  //}
   pass->updateMat4("projection",
       infinitePerspective(45.0f, 640.0f/480.0f, 0.1f));
   pass->updateFloatArray("sh_lut", sh_logs, lut_size*n*n);

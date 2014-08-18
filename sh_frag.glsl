@@ -15,16 +15,31 @@ uniform float radiuses[N];
 uniform vec3 positions[N];
 uniform float sh_lut[N_COEFF*LUT_SIZE];
 
-uniform samplerCube h_maps[N_COEFF];
+layout (location=0) uniform samplerCube h_maps0;
+layout (location=1) uniform samplerCube h_maps1;
+layout (location=2) uniform samplerCube h_maps2;
+layout (location=3) uniform samplerCube h_maps3;
+layout (location=4) uniform samplerCube h_maps4;
+layout (location=5) uniform samplerCube h_maps5;
+layout (location=6) uniform samplerCube h_maps6;
+layout (location=7) uniform samplerCube h_maps7;
+layout (location=8) uniform samplerCube h_maps8;
+// ...
 
 float[N_COEFF] lh(vec3 v)
 {
   float[N_COEFF] result;
 
-  for (int i = 0; i < N_COEFF; i++)
-  {
-    result[i] = texture(h_maps[i], v).r;
-  }
+  result[0] = texture(h_maps0, v).r;
+  result[1] = texture(h_maps1, v).r;
+  result[2] = texture(h_maps2, v).r;
+  result[3] = texture(h_maps3, v).r;
+  result[4] = texture(h_maps4, v).r;
+  result[5] = texture(h_maps5, v).r;
+  result[6] = texture(h_maps6, v).r;
+  result[7] = texture(h_maps7, v).r;
+  result[8] = texture(h_maps8, v).r;
+  // ...
 
   return result;
 }
@@ -117,6 +132,8 @@ void main()
   float[N_COEFF] y_norm = lh(v_normal);
   float ip = dot_sh(acc_coeff, y_norm);
 
-  out_color = vec4(color * pow(ip,10), 1);
+  /*out_color = vec4(color * pow(ip,10), 1);*/
+
+  out_color = vec4(texture(h_maps0, v_normal).r, texture(h_maps1, v_normal).r, texture(h_maps2, v_normal).r, 1);
 }
 

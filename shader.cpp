@@ -185,7 +185,7 @@ updateFloat(const char* name, float v)
   if (x != -1) glUniform1f(x, v);
 }
 void Shader::
-updateFloatArray(const char* name, float *v, int size)
+updateFloatArray(const char* name, const float *v, int size)
 {
   GLint x = findUniform(name);
   if (x != -1) glUniform1fv(x, size, v);
@@ -197,7 +197,7 @@ updateInt(const char* name, int v)
   if (x != -1) glUniform1i(x,v);
 }
 void Shader::
-updateInts(const char* name, int *v, int size)
+updateInts(const char* name, const int *v, int size)
 {
   GLint x = findUniform(name);
   if (x != -1) glUniform1iv(x,size,v);

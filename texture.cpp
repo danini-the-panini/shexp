@@ -16,7 +16,7 @@ build()
 {
   glGenTextures(1, &_texture);
 
-  glBindTexture(_texture, _target);
+  bind();
 
   build_impl();
 }
@@ -28,8 +28,14 @@ destroy()
 }
 
 void Texture::
+bind()
+{
+  glBindTexture(_target, _texture);
+}
+
+void Texture::
 use(GLenum slot)
 {
   glActiveTexture(slot);
-  glBindTexture(_texture, _target);
+  bind();
 }
