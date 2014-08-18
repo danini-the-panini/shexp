@@ -137,7 +137,7 @@ void main()
   }
   acc_coeff[0] += sqrt(4*PI);
 
-  float ip = dot_sh(y(v_normal), acc_coeff);
+  float ip = dot_sh(lh(v_normal), acc_coeff);
 
   out_color = vec4(color * pow(ip,2), 1);
 

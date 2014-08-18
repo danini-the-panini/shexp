@@ -115,7 +115,7 @@ int main(int argc, char** argv)
   double *l_coeff = new double[N_COEFFS];
 
   SH_project_polar_function([&](double theta, double phi) {
-      return 1;//(1.0 + 2.0*sin(theta))/3.0;
+      return (1.0 + 2.0*sin(theta))/3.0;
     }, samples, N_SAMPLES, N_BANDS, light_coeff);
 
   const int CUBE_MAP_SIZE = 8;
@@ -161,27 +161,27 @@ int main(int argc, char** argv)
         double n_theta = (M_PI*0.5) - atan2(y, sqrt(x*x+z*z));
         double n_phi = atan2(z, x);
 
-        //SH_project_polar_function([&](double s_theta, double s_phi) {
-            //return max(dot_polar(s_theta, s_phi, n_theta, n_phi), 0.0);
-          //}, samples, N_SAMPLES, N_BANDS, h_coeff);
+        SH_project_polar_function([&](double s_theta, double s_phi) {
+            return max(dot_polar(s_theta, s_phi, n_theta, n_phi), 0.0);
+          }, samples, N_SAMPLES, N_BANDS, h_coeff);
 
-        //for (int h = 0; h < N_COEFFS; h++)
-        //{
-          //h_coeff[h] /= M_PI;
-        //}
-
-        //SH_product(light_coeff, h_coeff, l_coeff);
-
-        //for(int index=0; index < N_COEFFS; ++index) {
-          //h_data[index][k][i*CUBE_MAP_SIZE+j] = l_coeff[index];
-        //}
-
-        for(int l=0; l<N_BANDS; ++l) {
-          for(int m=-l; m<=l; ++m) {
-            int index = l*(l+1)+m;
-            h_data[index][k][i*CUBE_MAP_SIZE+j] = (float)SH(l,m,n_theta,n_phi);
-          }
+        for (int h = 0; h < N_COEFFS; h++)
+        {
+          h_coeff[h] /= M_PI;
         }
+
+        SH_product(light_coeff, h_coeff, l_coeff);
+
+        for(int index=0; index < N_COEFFS; ++index) {
+          h_data[index][k][i*CUBE_MAP_SIZE+j] = l_coeff[index];
+        }
+
+        //for(int l=0; l<N_BANDS; ++l) {
+          //for(int m=-l; m<=l; ++m) {
+            //int index = l*(l+1)+m;
+            //h_data[index][k][i*CUBE_MAP_SIZE+j] = (float)SH(l,m,n_theta,n_phi);
+          //}
+        //}
 
         cout << "\033[u\033[K";
       }
