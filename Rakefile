@@ -28,7 +28,7 @@ ERBS.delete 'sh_functions.cpp'
 CLOBBER.include(*OBJECTS.keys, *BUILDS.keys, ERB_TARGETS, 'sh_lut.txt')
 
 SH_BANDS = 3
-LUT_SIZE = 10
+LUT_SIZE = 128
 
 task :default => 'main'
 

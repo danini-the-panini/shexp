@@ -41,9 +41,9 @@ build_impl(float_list &vertices, uint_list &indices)
     }
   }
 
-  for (GLuint row = 0; row < segments; row++)
+  for (GLuint row = 0; row <= segments; row++)
   {
-    for (GLuint col = 0; col < segments; col++)
+    for (GLuint col = 0; col <= segments; col++)
     {
       indices.push_back(row*segments + col);
       indices.push_back(row*segments + col + segments + 1);

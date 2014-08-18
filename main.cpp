@@ -9,6 +9,7 @@
 #include "plane.h"
 #include "camera.h"
 #include "transform.h"
+#include "texture2d.h"
 #include "cube_map.h"
 #include "green.h"
 
@@ -57,10 +58,14 @@ T dot_polar(T theta1, T phi1, T theta2, T phi2)
 
 int main(int argc, char** argv)
 {
-  ////////////// LOAD SH LUT //////////////
-  cout << "Loading SH LUT ... " << endl;
+  GFXBoilerplate gfx;
+  gfx.init();
 
-  int n = N_BANDS;
+  ////////////// LOAD SH LUT //////////////
+  cout << "Loading SH LUT ... ";
+
+  Texture2d sh_lut;
+
   ifstream in(argc > 1 ? argv[0] : "sh_lut.txt");
   if (!in)
   {
@@ -69,10 +74,10 @@ int main(int argc, char** argv)
   }
   int lut_size;
   in >> lut_size;
-  float* sh_logs = new float[lut_size*n*n];
+  float* sh_logs = new float[lut_size*N_COEFFS];
 
   double tmp;
-  for (int i = 0; i < lut_size*n*n; i++)
+  for (int i = 0; i < lut_size*N_COEFFS; i++)
   {
     in >> tmp;
     sh_logs[i] = static_cast<float>(tmp);
@@ -80,6 +85,10 @@ int main(int argc, char** argv)
 
   for (int i = 0; i < lut_size; i++)
     sh_logs[i] = (float)sh_logs[i];
+
+  glActiveTexture(GL_TEXTURE0);
+  sh_lut.build();
+  sh_lut.load_tex(sh_logs, N_COEFFS, lut_size, GL_R32F, GL_RED, GL_FLOAT);
 
   cout << "done." << endl;
 
@@ -106,7 +115,7 @@ int main(int argc, char** argv)
   double *l_coeff = new double[N_COEFFS];
 
   SH_project_polar_function([&](double theta, double phi) {
-      return (1.0 + 2.0*sin(theta))/3.0;
+      return 1;//(1.0 + 2.0*sin(theta))/3.0;
     }, samples, N_SAMPLES, N_BANDS, light_coeff);
 
   const int CUBE_MAP_SIZE = 8;
@@ -131,8 +140,8 @@ int main(int argc, char** argv)
   {
     for (int j = 0; j < CUBE_MAP_SIZE; j++)
     {
-      float u = (float)j - GU;
-      float v = (float)i - GU;
+      float u = (float)j - GU + 0.5f;
+      float v = (float)i - GU + 0.5f;
 
       vec3 d[6] = {
         vec3( GU,  -v,  -u),
@@ -152,27 +161,27 @@ int main(int argc, char** argv)
         double n_theta = (M_PI*0.5) - atan2(y, sqrt(x*x+z*z));
         double n_phi = atan2(z, x);
 
-        SH_project_polar_function([&](double s_theta, double s_phi) {
-            return max(dot_polar(s_theta, s_phi, n_theta, n_phi), 0.0);
-          }, samples, N_SAMPLES, N_BANDS, h_coeff);
+        //SH_project_polar_function([&](double s_theta, double s_phi) {
+            //return max(dot_polar(s_theta, s_phi, n_theta, n_phi), 0.0);
+          //}, samples, N_SAMPLES, N_BANDS, h_coeff);
 
-        for (int h = 0; h < N_COEFFS; h++)
-        {
-          h_coeff[h] /= M_PI;
-        }
-
-        SH_product(light_coeff, h_coeff, l_coeff);
-
-        for(int index=0; index < N_COEFFS; ++index) {
-          h_data[index][k][i*CUBE_MAP_SIZE+j] = l_coeff[index];
-        }
-
-        //for(int l=0; l<N_BANDS; ++l) {
-          //for(int m=-l; m<=l; ++m) {
-            //int index = l*(l+1)+m;
-            //h_data[index][k][i*CUBE_MAP_SIZE+j] = (float)SH(l,m,n_theta,n_phi);
-          //}
+        //for (int h = 0; h < N_COEFFS; h++)
+        //{
+          //h_coeff[h] /= M_PI;
         //}
+
+        //SH_product(light_coeff, h_coeff, l_coeff);
+
+        //for(int index=0; index < N_COEFFS; ++index) {
+          //h_data[index][k][i*CUBE_MAP_SIZE+j] = l_coeff[index];
+        //}
+
+        for(int l=0; l<N_BANDS; ++l) {
+          for(int m=-l; m<=l; ++m) {
+            int index = l*(l+1)+m;
+            h_data[index][k][i*CUBE_MAP_SIZE+j] = (float)SH(l,m,n_theta,n_phi);
+          }
+        }
 
         cout << "\033[u\033[K";
       }
@@ -180,13 +189,10 @@ int main(int argc, char** argv)
   }
   cout << "done." << endl;
 
-  GFXBoilerplate gfx;
-  gfx.init();
-
   cout << " * Loading maps into textures ... ";
   for (int i = 0; i < N_COEFFS; i++)
   {
-    glActiveTexture(GL_TEXTURE0+i);
+    glActiveTexture(GL_TEXTURE1+i);
     h_maps[i].build();
     h_maps[i].load_cube(h_data[i], CUBE_MAP_SIZE, CUBE_MAP_SIZE,
         GL_R32F, GL_RED, GL_FLOAT);
@@ -234,12 +240,12 @@ int main(int argc, char** argv)
   int indices[N_COEFFS];
   for (int i = 0; i < N_COEFFS; i++)
   {
-    indices[i] = i;
+    indices[i] = 1+i;
   }
+  pass->updateInt("sh_lut", 0);
   pass->updateInts("h_maps", indices, N_COEFFS);
   pass->updateMat4("projection",
       infinitePerspective(45.0f, 640.0f/480.0f, 0.1f));
-  pass->updateFloatArray("sh_lut", sh_logs, lut_size*n*n);
 
   vector<vec3> sphere_positions;
   vector<GLfloat> sphere_radiuses;
@@ -249,17 +255,21 @@ int main(int argc, char** argv)
   sphere_radiuses.push_back(20.0f);
   colors.push_back(vec3(0,1,1));
 
+  const GLuint levels = 4;
   const GLuint segments = 16;
   const GLfloat rad_per_lng = (2.f*(GLfloat)M_PI) / (GLfloat)segments;
-  for (int i = 0; i < segments; i++)
+  for (int j = 0; j < levels; j++)
   {
-    sphere_positions.push_back(vec3(
-          50.0 * cos(i * rad_per_lng),
-          6.0,
-          50.0 * sin(i * rad_per_lng)
-          ));
-    sphere_radiuses.push_back(6.0f);
-    colors.push_back(vec3(1,0,1));
+    for (int i = 0; i < segments; i++)
+    {
+      sphere_positions.push_back(vec3(
+            50.0 * cos(i * rad_per_lng),
+            6.0+(12.0*j),
+            50.0 * sin(i * rad_per_lng)
+            ));
+      sphere_radiuses.push_back(6.0f);
+      colors.push_back(vec3(1,0,1));
+    }
   }
 
   vector<Transform> transforms;
@@ -285,15 +295,18 @@ int main(int argc, char** argv)
     sphere_positions[0] = vec3(0,30+10*sin(x),0);
     transforms[0].set_translation(sphere_positions[0]);
 
-    GLfloat sx = (GLfloat)sin(x*2);
-    for (int i = 0; i < segments; i++)
+    for (int j = 0; j < levels; j++)
     {
-      sphere_positions[i+1] = vec3(
-          (50.0+20*sx) * cos(i * rad_per_lng),
-          6.0,
-          (50.0+20*sx) * sin(i * rad_per_lng)
-        );
-      transforms[i+1].set_translation(sphere_positions[i+1]);
+      GLfloat sx = (GLfloat)sin(x*2+(M_PI*0.25f*j));
+      for (int i = 0; i < segments; i++)
+      {
+        sphere_positions[i+1+segments*j] = vec3(
+            (50.0+20*sx) * cos(i * rad_per_lng + x*(0.1*j)),
+            6.0+(12.0*j),
+            (50.0+20*sx) * sin(i * rad_per_lng + x*(0.1*j))
+          );
+        transforms[i+1+segments*j].set_translation(sphere_positions[i+1+segments*j]);
+      }
     }
 
     pass->updateFloatArray("radiuses", sphere_radiuses.data(), sphere_radiuses.size());
