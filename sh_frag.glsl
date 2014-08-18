@@ -114,11 +114,10 @@ void main()
   }
   acc_coeff[0] += sqrt(4*PI);
 
-  float[N_COEFF] y_norm = lh(v_normal);
-  float ip = dot_sh(acc_coeff, y_norm);
+  float ip = dot_sh(lh(v_normal), acc_coeff);
 
-  /*out_color = vec4(color * pow(ip,10), 1);*/
+  out_color = vec4(color * ip, 1);
 
-  out_color = vec4(texture(h_maps[0], v_normal).r, texture(h_maps[1], v_normal).r, texture(h_maps[2], v_normal).r, 1);
+  /*out_color = vec4(texture(h_maps[0], v_normal).r, texture(h_maps[1], v_normal).r, texture(h_maps[2], v_normal).r, 1);*/
 }
 
