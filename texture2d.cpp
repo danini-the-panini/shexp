@@ -20,11 +20,11 @@ load_tex(const float* data, GLsizei width, GLsizei height, GLint internalFormat,
   glTexParameteri(
           GL_TEXTURE_2D,
           GL_TEXTURE_MAG_FILTER,
-          GL_NEAREST);
+          GL_LINEAR);
   glTexParameteri(
           GL_TEXTURE_2D,
           GL_TEXTURE_MIN_FILTER,
-          GL_NEAREST);
+          GL_LINEAR);
   glTexParameteri(
           GL_TEXTURE_2D,
           GL_TEXTURE_WRAP_R,

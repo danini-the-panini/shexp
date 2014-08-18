@@ -244,8 +244,6 @@ int main(int argc, char** argv)
   }
   pass->updateInt("sh_lut", 0);
   pass->updateInts("h_maps", indices, N_COEFFS);
-  pass->updateMat4("projection",
-      infinitePerspective(45.0f, 640.0f/480.0f, 0.1f));
 
   vector<vec3> sphere_positions;
   vector<GLfloat> sphere_radiuses;
@@ -281,6 +279,7 @@ int main(int argc, char** argv)
   Transform plane_transform(vec3(0,0,0),quat(1,0,0,0),vec3(200));
 
   float x = 0.0f;
+  int width, height;
 
   while (!glfwWindowShouldClose(gfx.window()))
   {
@@ -289,7 +288,10 @@ int main(int argc, char** argv)
     handleInput(gfx.window());
     pass->updateMat4("view", camera.getView());
 
-    glViewport(0, 0, 640, 480);
+    glfwGetFramebufferSize(gfx.window(), &width, &height);
+    pass->updateMat4("projection",
+        infinitePerspective(45.0f, (float)width/(float)height, 0.1f));
+    glViewport(0, 0, width, height);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
     sphere_positions[0] = vec3(0,30+10*sin(x),0);
