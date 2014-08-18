@@ -28,9 +28,11 @@ ERBS.delete 'sh_functions.cpp'
 CLOBBER.include(*OBJECTS.keys, *BUILDS.keys, ERB_TARGETS, 'sh_lut.txt')
 
 SH_BANDS = 3
-LUT_SIZE = 128
+LUT_SIZE = 64
 
 task :default => 'main'
+
+task :all => ['main', 'sh_lut.txt']
 
 def build target, objects
   puts "---------- Building: #{target}"
@@ -72,6 +74,7 @@ BUILDS.each do |target, objects|
 end
 
 file 'sh_lut.txt' => 'sh_lut' do
+  puts "---------- Exec: ./sh_lut"
   sh "./sh_lut #{LUT_SIZE} > sh_lut.txt"
 end
 

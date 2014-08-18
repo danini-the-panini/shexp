@@ -139,7 +139,7 @@ void main()
 
   float ip = dot_sh(y(v_normal), acc_coeff);
 
-  out_color = vec4(color * ip, 1);
+  out_color = vec4(color * pow(ip,5), 1);
 
   /*out_color = vec4(texture(h_maps[0], v_normal).r, texture(h_maps[1], v_normal).r, texture(h_maps[2], v_normal).r, 1);*/
 }
