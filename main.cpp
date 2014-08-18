@@ -234,12 +234,12 @@ int main(int argc, char** argv)
   pln.build();
 
   pass->use();
-  //char temp[100];
-  //for (int i = 0; i < N_COEFFS; i++)
-  //{
-    //sprintf(temp, "h_maps%d",i);
-    //pass->updateInt(temp, i);
-  //}
+  int indices[N_COEFFS];
+  for (int i = 0; i < N_COEFFS; i++)
+  {
+    indices[i] = i;
+  }
+  pass->updateInts("h_maps", indices, N_COEFFS);
   pass->updateMat4("projection",
       infinitePerspective(45.0f, 640.0f/480.0f, 0.1f));
   pass->updateFloatArray("sh_lut", sh_logs, lut_size*n*n);
