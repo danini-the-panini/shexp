@@ -80,15 +80,16 @@ spherical_function overcast()
   };
 }
 
-spherical_function clearsky(const double sun_theta, const double sun_phi)
+spherical_function clearsky(const double sun_theta, const double sun_phi, const double scale = 0.2)
 {
-  const double cos_sun_theta = cos(sun_theta);
-  return [sun_theta, sun_phi, cos_sun_theta](double theta, double phi) {
+  const double Z = M_PI/2.0 - sun_theta;
+  const double cos_Z = cos(Z);
+  return [Z, cos_Z, sun_theta, sun_phi, scale](double theta, double phi) {
     double gamma = angle_between(sun_theta, sun_phi, theta, phi);
     double cos_gamma = cos(gamma);
     double num = (0.91f + 10 * exp(-3 * gamma) + 0.45 * cos_gamma * cos_gamma) * (1 - exp(-0.32f / cos(theta)));
-    double denom = (0.91f + 10 * exp(-3 * sun_theta) + 0.45 * cos_sun_theta * cos_sun_theta) * (1 - exp(-0.32f));
-    return num / denom;
+    double denom = (0.91f + 10 * exp(-3 * Z) + 0.45 * cos_Z * cos_Z) * (1 - exp(-0.32f));
+    return max(scale * num / denom, 0.0);
   };
 }
 
@@ -237,7 +238,7 @@ int main(int argc, char** argv)
   cout << "   - l_coeff" << endl;
   double *l_coeff = new double[N_COEFFS];
 
-  auto sky_function = splodge(M_PI*0.4, M_PI);
+  auto sky_function = clearsky(M_PI*0.2, M_PI);
 
   SH_project_polar_function(sky_function, samples, N_SAMPLES, N_BANDS, light_coeff);
 
