@@ -10,7 +10,7 @@ public:
   typedef vector<GLfloat> float_list;
   typedef vector<GLuint> uint_list;
 
-  Mesh();
+  Mesh(bool normals = true);
   virtual ~Mesh();
   virtual void build();
   virtual void destroy();
@@ -21,6 +21,7 @@ public:
 protected:
   GLuint  _vao, _vbo, _ibo;
   GLsizei _num_indices;
+  bool _has_normals;
 
   GLuint gen_and_bind_buffer(GLenum type);
   void send_vertices_to_buffer(const float_list &vertices);

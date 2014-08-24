@@ -7,6 +7,7 @@
 #include "shader.h"
 #include "sphere.h"
 #include "plane.h"
+#include "ndc_quad.h"
 #include "camera.h"
 #include "transform.h"
 #include "texture2d.h"
@@ -56,8 +57,99 @@ T dot_polar(T theta1, T phi1, T theta2, T phi2)
   return sin(phi1) * sin(phi2) * cos(theta1-theta2) + cos(phi1) * cos(phi2);
 }
 
+template < typename T >
+T angle_between(T theta1, T phi1, T theta2, T phi2)
+{
+  T cospsi = dot_polar(theta1, phi1, theta2, phi2);
+  if (cospsi > 1) return 0;
+  if (cospsi < -1) return M_PI;
+  return acos(cospsi);
+}
+
+function<double(double, double)> overcast()
+{
+  return [&](double theta, double phi) {
+    return (1.0 + 2.0*sin(theta+(M_PI/2.0)))/3.0;
+  };
+}
+
+function<double(double, double)> clearsky(double sun_theta, double sun_phi)
+{
+  double cos_sun_theta = cos(sun_theta);
+  return [&](double theta, double phi) {
+    double gamma = angle_between(sun_theta, sun_phi, theta, phi);
+    double cos_gamma = cos(gamma);
+    return ((1-exp(-0.32/cos(theta))) * (0.91+10*exp(-3*gamma)+0.45*cos_gamma*cos_gamma))/
+      ((1-exp(-0.32)) * (-0.91+10*exp(-3*sun_theta)+0.45*cos_sun_theta*cos_sun_theta));
+  };
+}
+
+function<double(double,double)> allwhite()
+{
+  return [&](double, double) {
+    return 1;
+  };
+}
+
+void fill_cube_map(float ** data, const GLsizei size,
+    function<double(double,double)> fn)
+{
+  const float GU = size*0.5f;
+  for (int i = 0; i < size; i++)
+  {
+    for (int j = 0; j < size; j++)
+    {
+      float u = (float)j - GU + 0.5f;
+      float v = (float)i - GU + 0.5f;
+
+      vec3 d[6] = {
+        vec3( GU,  -v,  -u),
+        vec3(-GU,  -v,   u),
+        vec3(  u,  GU,   v),
+        vec3(  u, -GU,  -v),
+        vec3(  u,  -v,  GU),
+        vec3( -u,  -v, -GU)
+      };
+
+      for (int k = 0; k < 6; k++)
+      {
+        double x = d[k].x, y = d[k].y, z = d[k].z;
+
+        double n_theta = (M_PI*0.5) - atan2(y, sqrt(x*x+z*z));
+        double n_phi = atan2(z, x);
+
+        data[k][i*size+j] = (float)fn(n_theta, n_phi);
+      }
+    }
+  }
+}
+
+CubeMap gen_cube_map(const GLsizei size, function<double(double,double)> fn,
+    GLint internalFormat, GLenum format, GLenum type)
+{
+  float ** data = new float*[6];
+  for (int i = 0; i < 6; i++)
+    data[i] = new float[size*size];
+
+  fill_cube_map(data, size, fn);
+
+  CubeMap map;
+  map.build();
+  map.load_cube(data, size, size, internalFormat, format, type);
+
+  for (int i = 0; i < 6; i++)
+    delete [] data[i];
+  delete [] data;
+
+  return map;
+}
+
 int main(int argc, char** argv)
 {
+  //double thing = abs(angle_between(M_PI*0.5,M_PI*0.3,M_PI*0.5,M_PI*0.6));
+  //cout << thing << endl;
+  //assert(thing < 0.000001);
+
   GFXBoilerplate gfx;
   gfx.init();
 
@@ -114,9 +206,9 @@ int main(int argc, char** argv)
   cout << "   - l_coeff" << endl;
   double *l_coeff = new double[N_COEFFS];
 
-  SH_project_polar_function([&](double theta, double phi) {
-      return (1.0 + 2.0*sin(theta))/3.0;
-    }, samples, N_SAMPLES, N_BANDS, light_coeff);
+  auto sky_function = overcast();//clearsky(M_PI*0.25, M_PI*0.25);
+
+  SH_project_polar_function(sky_function, samples, N_SAMPLES, N_BANDS, light_coeff);
 
   const int CUBE_MAP_SIZE = 8;
 
@@ -215,8 +307,6 @@ int main(int argc, char** argv)
 
   ///////////////// DO THE OPENGL THING ////////////////
 
-  glEnable(GL_DEPTH_TEST);
-
   glfwSetCursorPosCallback(gfx.window(), mouse_callback);
 
   Shader* pass = (new Shader())
@@ -229,12 +319,17 @@ int main(int argc, char** argv)
     ->fragment("skybox_frag.glsl")
     ->build();
 
-
   Sphere sph;
   sph.build();
 
   Plane pln;
   pln.build();
+
+  glActiveTexture(GL_TEXTURE0+42);
+  CubeMap skymap = gen_cube_map(256, sky_function, GL_R32F, GL_RED, GL_FLOAT);
+
+  NDCQuad sky;
+  sky.build();
 
   pass->use();
   int indices[N_COEFFS];
@@ -244,6 +339,9 @@ int main(int argc, char** argv)
   }
   pass->updateInt("sh_lut", 0);
   pass->updateInts("h_maps", indices, N_COEFFS);
+
+  skybox->use();
+  skybox->updateInt("map", 42);
 
   vector<vec3> sphere_positions;
   vector<GLfloat> sphere_radiuses;
@@ -280,19 +378,35 @@ int main(int argc, char** argv)
 
   float x = 0.0f;
   int width, height;
+  float aspect;
+  mat4 projection;
 
+  glEnable(GL_DEPTH_TEST);
   while (!glfwWindowShouldClose(gfx.window()))
   {
+    glfwGetFramebufferSize(gfx.window(), &width, &height);
+    glViewport(0, 0, width, height);
+    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+    aspect = (float)width/(float)height;
+    projection = infinitePerspective(45.0f, aspect, 0.1f);
+
     x += 0.01f;
 
     handleInput(gfx.window());
-    pass->updateMat4("view", camera.getView());
 
-    glfwGetFramebufferSize(gfx.window(), &width, &height);
-    pass->updateMat4("projection",
-        infinitePerspective(45.0f, (float)width/(float)height, 0.1f));
-    glViewport(0, 0, width, height);
-    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+    skybox->use();
+    skybox->updateFloat("aspect", aspect);
+    skybox->updateMat4("view", camera.getView());
+    skybox->updateMat4("projection", projection);
+
+    glDepthMask(GL_FALSE);
+    sky.draw();
+    glDepthMask(GL_TRUE);
+
+    pass->use();
+    pass->updateMat4("view", camera.getView());
+    pass->updateMat4("projection", projection);
 
     sphere_positions[0] = vec3(0,30+10*sin(x),0);
     transforms[0].set_translation(sphere_positions[0]);

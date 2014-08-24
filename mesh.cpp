@@ -1,7 +1,8 @@
 #include "mesh.h"
 
 Mesh::
-Mesh()
+Mesh(bool normals)
+  : _has_normals(normals)
 {
 }
 
@@ -28,7 +29,7 @@ build()
   send_indices_to_buffer(indices);
 
   enable_position_attr();
-  enable_normal_attr();
+  if (_has_normals) enable_normal_attr();
 }
 
 void Mesh::
@@ -80,8 +81,9 @@ draw(GLenum type)
   void Mesh::
   enable_position_attr()
   {
+    GLsizei stride = _has_normals ? 6 : 3;
     glEnableVertexAttribArray(1);
-    glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(GLfloat), 0);
+    glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, stride * sizeof(GLfloat), 0);
   }
 
   void Mesh::

@@ -11,7 +11,7 @@ using namespace Eigen;
 
 double g(double t, double theta, double)
 {
-  return (theta >= M_PI-t) ? 0.0 : 1.0;
+  return (theta < t) ? 0.0 : 1.0;
 }
 
 // Ren et al. 2006 eq. 31
