@@ -19,6 +19,8 @@ using namespace std;
 typedef OrthoRotMatCamera<float, highp> ORMCamF;
 ORMCamF camera(ORMCamF::vec3_type(0,30,-50));
 
+typedef function<double(double,double)> spherical_function;
+
 const int KEYS[] = {GLFW_KEY_W, GLFW_KEY_S, GLFW_KEY_A, GLFW_KEY_D,
   GLFW_KEY_SPACE, GLFW_KEY_LEFT_CONTROL, GLFW_KEY_E, GLFW_KEY_Q};
 void handleInput(GLFWwindow *window)
@@ -51,48 +53,82 @@ void mouse_callback(GLFWwindow *window, double x, double y)
   my = y;
 }
 
+double safe_acos(double x)
+{
+  if (x < -1) return M_PI;
+  if (x > 1) return 0;
+  return acos(x);
+}
+
 template < typename T >
 T dot_polar(T theta1, T phi1, T theta2, T phi2)
 {
-  return sin(phi1) * sin(phi2) * cos(theta1-theta2) + cos(phi1) * cos(phi2);
+  return sin(theta1) * sin(theta2) * cos(phi1-phi2) + cos(theta1) * cos(theta2);
 }
 
 template < typename T >
 T angle_between(T theta1, T phi1, T theta2, T phi2)
 {
   T cospsi = dot_polar(theta1, phi1, theta2, phi2);
-  if (cospsi > 1) return 0;
-  if (cospsi < -1) return M_PI;
-  return acos(cospsi);
+  return safe_acos(cospsi);
 }
 
-function<double(double, double)> overcast()
+spherical_function overcast()
 {
   return [&](double theta, double phi) {
-    return (1.0 + 2.0*sin(theta+(M_PI/2.0)))/3.0;
+    return (1.0 + 2.0*sin(M_PI*0.5 - theta))/3.0;
   };
 }
 
-function<double(double, double)> clearsky(double sun_theta, double sun_phi)
+spherical_function clearsky(const double sun_theta, const double sun_phi)
 {
-  double cos_sun_theta = cos(sun_theta);
-  return [&](double theta, double phi) {
+  const double cos_sun_theta = cos(sun_theta);
+  return [sun_theta, sun_phi, cos_sun_theta](double theta, double phi) {
     double gamma = angle_between(sun_theta, sun_phi, theta, phi);
     double cos_gamma = cos(gamma);
-    return ((1-exp(-0.32/cos(theta))) * (0.91+10*exp(-3*gamma)+0.45*cos_gamma*cos_gamma))/
-      ((1-exp(-0.32)) * (-0.91+10*exp(-3*sun_theta)+0.45*cos_sun_theta*cos_sun_theta));
+    double num = (0.91f + 10 * exp(-3 * gamma) + 0.45 * cos_gamma * cos_gamma) * (1 - exp(-0.32f / cos(theta)));
+    double denom = (0.91f + 10 * exp(-3 * sun_theta) + 0.45 * cos_sun_theta * cos_sun_theta) * (1 - exp(-0.32f));
+    return num / denom;
   };
 }
 
-function<double(double,double)> allwhite()
+spherical_function splodge(const double sun_theta, const double sun_phi)
 {
-  return [&](double, double) {
+  return [sun_theta, sun_phi](double theta, double phi) {
+    return dot_polar(sun_theta, sun_phi, theta, phi);
+  };
+}
+
+spherical_function allwhite()
+{
+  return [](double, double) {
     return 1;
   };
 }
 
+spherical_function testing_ground()
+{
+  return [&](double, double phi) {
+    return phi/(2.0*M_PI);
+  };
+}
+
+spherical_function h_function(const double n_theta, const double n_phi)
+{
+  return [n_theta, n_phi](double s_theta, double s_phi) {
+    return max(dot_polar(s_theta, s_phi, n_theta, n_phi), 0.0);
+  };
+}
+
+void convert_to_polar(double x, double y, double z, double *r, double *theta, double *phi)
+{
+  *r = sqrt(x*x+y*y+z*z);
+  *theta = safe_acos(y / (*r));
+  *phi = M_PI + atan2(z,x);
+}
+
 void fill_cube_map(float ** data, const GLsizei size,
-    function<double(double,double)> fn)
+    spherical_function fn)
 {
   const float GU = size*0.5f;
   for (int i = 0; i < size; i++)
@@ -115,8 +151,9 @@ void fill_cube_map(float ** data, const GLsizei size,
       {
         double x = d[k].x, y = d[k].y, z = d[k].z;
 
-        double n_theta = (M_PI*0.5) - atan2(y, sqrt(x*x+z*z));
-        double n_phi = atan2(z, x);
+        double n_radius, n_theta, n_phi;
+
+        convert_to_polar(x,y,z,&n_radius,&n_theta,&n_phi);
 
         data[k][i*size+j] = (float)fn(n_theta, n_phi);
       }
@@ -124,7 +161,7 @@ void fill_cube_map(float ** data, const GLsizei size,
   }
 }
 
-CubeMap gen_cube_map(const GLsizei size, function<double(double,double)> fn,
+CubeMap gen_cube_map(const GLsizei size, spherical_function fn,
     GLint internalFormat, GLenum format, GLenum type)
 {
   float ** data = new float*[6];
@@ -146,10 +183,6 @@ CubeMap gen_cube_map(const GLsizei size, function<double(double,double)> fn,
 
 int main(int argc, char** argv)
 {
-  //double thing = abs(angle_between(M_PI*0.5,M_PI*0.3,M_PI*0.5,M_PI*0.6));
-  //cout << thing << endl;
-  //assert(thing < 0.000001);
-
   GFXBoilerplate gfx;
   gfx.init();
 
@@ -194,9 +227,7 @@ int main(int argc, char** argv)
   {
     samples[i].coeff = new double[N_COEFFS];
   }
-  cout << " * Generating SH samples ... ";
   SH_setup_spherical_samples(samples, SQRT_N_SAMPLES, N_BANDS);
-  cout << "done." << endl;
 
   cout << " * Allocating ... " << endl;
   cout << "   - light_coeff" << endl;
@@ -206,7 +237,7 @@ int main(int argc, char** argv)
   cout << "   - l_coeff" << endl;
   double *l_coeff = new double[N_COEFFS];
 
-  auto sky_function = overcast();//clearsky(M_PI*0.25, M_PI*0.25);
+  auto sky_function = splodge(M_PI*0.4, M_PI);
 
   SH_project_polar_function(sky_function, samples, N_SAMPLES, N_BANDS, light_coeff);
 
@@ -250,12 +281,11 @@ int main(int argc, char** argv)
 
         double x = d[k].x, y = d[k].y, z = d[k].z;
 
-        double n_theta = (M_PI*0.5) - atan2(y, sqrt(x*x+z*z));
-        double n_phi = atan2(z, x);
+        double n_radius, n_theta, n_phi;
 
-        SH_project_polar_function([&](double s_theta, double s_phi) {
-            return max(dot_polar(s_theta, s_phi, n_theta, n_phi), 0.0);
-          }, samples, N_SAMPLES, N_BANDS, h_coeff);
+        convert_to_polar(x,y,z,&n_radius,&n_theta,&n_phi);
+
+        SH_project_polar_function(h_function(n_theta, n_phi), samples, N_SAMPLES, N_BANDS, h_coeff);
 
         for (int h = 0; h < N_COEFFS; h++)
         {
