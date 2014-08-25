@@ -330,6 +330,8 @@ int main(int argc, char** argv)
   const int CUBE_MAP_SIZE = 8;
 
   CubeMap h_maps[N_COEFFS];
+  CubeMap y_maps[N_COEFFS];
+
   float **h_data[N_COEFFS];
   for (int i = 0; i < N_COEFFS; i++)
   {
@@ -340,7 +342,7 @@ int main(int argc, char** argv)
     }
   }
 
-  cout << " * Generating data ... \033[s";
+  cout << " * Generating H data ... ";
   fill_sh_cube_maps(h_data, CUBE_MAP_SIZE,
     [l_coeff, h_coeff, samples](double theta, double phi, double *coeffs)
     {
@@ -355,10 +357,36 @@ int main(int argc, char** argv)
     });
   cout << "done." << endl;
 
-  cout << " * Loading maps into textures ... ";
+  cout << " * Loading H maps into textures ... ";
   for (int i = 0; i < N_COEFFS; i++)
   {
     glActiveTexture(GL_TEXTURE0+tex_offset+i);
+    h_maps[i].build();
+    h_maps[i].load_cube(h_data[i], CUBE_MAP_SIZE, CUBE_MAP_SIZE,
+        GL_R32F, GL_RED, GL_FLOAT);
+  }
+  cout << "done." << endl;
+  cout << " * Generating Y data ... ";
+  fill_sh_cube_maps(h_data, CUBE_MAP_SIZE,
+    [l_coeff, h_coeff, samples](double theta, double phi, double *coeffs)
+    {
+      for (int l = 0; l < N_BANDS; l++)
+      {
+        for (int m = -l; m <= l; m++)
+        {
+          int index = l*(l+1)+m;
+          coeffs[index] = SH(l,m,theta,phi);
+        }
+      }
+
+      SH_product(l_coeff, h_coeff, coeffs);
+    });
+  cout << "done." << endl;
+
+  cout << " * Loading Y maps into textures ... ";
+  for (int i = 0; i < N_COEFFS; i++)
+  {
+    glActiveTexture(GL_TEXTURE0+tex_offset+N_COEFFS+i);
     h_maps[i].build();
     h_maps[i].load_cube(h_data[i], CUBE_MAP_SIZE, CUBE_MAP_SIZE,
         GL_R32F, GL_RED, GL_FLOAT);
@@ -407,14 +435,17 @@ int main(int argc, char** argv)
 
   pass->use();
   int indices[N_COEFFS];
+  int y_indices[N_COEFFS];
   for (int i = 0; i < N_COEFFS; i++)
   {
     indices[i] = tex_offset+i;
+    y_indices[i] = indices[i]+N_COEFFS;
   }
   pass->updateInt("sh_lut", 0);
   pass->updateInt("a_lut", 1);
   pass->updateInt("b_lut", 2);
   pass->updateInts("h_maps", indices, N_COEFFS);
+  pass->updateInts("y_maps", y_indices, N_COEFFS);
 
   skybox->use();
   skybox->updateInt("map", 42);

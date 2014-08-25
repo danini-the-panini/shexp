@@ -17,6 +17,7 @@ uniform vec3 positions[N];
 uniform float ab_min = 0, ab_max = 5.16;
 uniform sampler2D sh_lut, a_lut, b_lut;
 uniform samplerCube h_maps[N_COEFFS];
+uniform samplerCube y_maps[N_COEFFS];
 
 float[N_COEFFS] window(float[N_COEFFS] c)
 {
@@ -34,46 +35,27 @@ float[N_COEFFS] window(float[N_COEFFS] c)
   return result;
 }
 
-float[N_COEFFS] lh(vec3 v)
+float[N_COEFFS] sh_index(vec3 v, samplerCube maps[N_COEFFS])
 {
   float[N_COEFFS] result;
 
   for(int i = 0; i < N_COEFFS; i++)
   {
-    result[i] = texture(h_maps[i], v).r;
+    result[i] = texture(maps[i], v).r;
   }
 
   return result;
 }
 
+float[N_COEFFS] lh(vec3 v)
+{
+  return sh_index(v, h_maps);
+}
+
 // assume v is normalized!
 float[N_COEFFS] y(vec3 v)
 {
-  return float[N_COEFFS](
-    0.5*sqrt(1/PI),
-
-    sqrt(3/4*PI) * v.y,
-    sqrt(3/4*PI) * v.z,
-    sqrt(3/4*PI) * v.x,
-
-    0.5*sqrt(15/PI)*v.x*v.y,
-    0.5*sqrt(15/PI)*v.y*v.z,
-    0.25*sqrt(5/PI)*(-(v.x*v.x)-(v.y*v.y)+2*(v.z*v.z)),
-    0.5*sqrt(15/PI)*v.z*v.x,
-    0.25*sqrt(5/PI)*((v.x*v.x)-(v.y*v.y))
-
-    /*
-     *0.25*sqrt(35/2*PI)*(3*v.x*v.x - v.y*v.y)*v.y,
-     *0.5*sqrt(105/PI)*v.x*v.y*v.z,
-     *0.25*sqrt(21/PI)*v.y*(4*v.z*v.z-v.x*v.x-v.y*v.y),
-     *0.25*sqrt(7/PI)*v.z*(2*v.z*v.z-3*v.x*v.x-3*v.y*v.y),
-     *0.25*sqrt(21/2*PI)*v.x*(4*v.z-v.z-v.x*v.x-v.y*v.y),
-     *0.25*sqrt(105/PI)*(v.x*v.x-v.y*v.y)*v.z,
-     *0.25*sqrt(35/2*PI)*(v.x*v.x-3*v.y*v.y)*v.x
-     */
-
-    // ...
-  );
+  return sh_index(v, y_maps);
 }
 
 float[N_COEFFS] rotate_to(float[N_COEFFS] sh, vec3 v)
@@ -155,7 +137,7 @@ float[N_COEFFS] get_coeff(vec3 v, float radius)
   {
     log_coeff[j] = texture(sh_lut, vec2(float(j)/float(N_COEFFS),fi)).r;
   }
-  return rotate_to(log_coeff, normalize(v));
+  return rotate_to(log_coeff, v/d);
 }
 
 void main()
