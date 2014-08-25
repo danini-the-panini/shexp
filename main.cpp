@@ -327,10 +327,9 @@ int main(int argc, char** argv)
 
   SH_project_polar_function(sky_function, samples, N_SAMPLES, N_BANDS, l_coeff);
 
-  const int CUBE_MAP_SIZE = 8;
+  const int H_MAP_SIZE = 8;
 
   CubeMap h_maps[N_COEFFS];
-  CubeMap y_maps[N_COEFFS];
 
   float **h_data[N_COEFFS];
   for (int i = 0; i < N_COEFFS; i++)
@@ -338,12 +337,12 @@ int main(int argc, char** argv)
     h_data[i] = new float*[6];
     for (int j = 0; j < 6; j++)
     {
-      h_data[i][j] = new float[CUBE_MAP_SIZE*CUBE_MAP_SIZE];
+      h_data[i][j] = new float[H_MAP_SIZE*H_MAP_SIZE];
     }
   }
 
   cout << " * Generating H data ... ";
-  fill_sh_cube_maps(h_data, CUBE_MAP_SIZE,
+  fill_sh_cube_maps(h_data, H_MAP_SIZE,
     [l_coeff, h_coeff, samples](double theta, double phi, double *coeffs)
     {
       SH_project_polar_function(h_function(theta, phi), samples, N_SAMPLES, N_BANDS, h_coeff);
@@ -362,13 +361,28 @@ int main(int argc, char** argv)
   {
     glActiveTexture(GL_TEXTURE0+tex_offset+i);
     h_maps[i].build();
-    h_maps[i].load_cube(h_data[i], CUBE_MAP_SIZE, CUBE_MAP_SIZE,
+    h_maps[i].load_cube(h_data[i], H_MAP_SIZE, H_MAP_SIZE,
         GL_R32F, GL_RED, GL_FLOAT);
   }
   cout << "done." << endl;
+
+  const int Y_MAP_SIZE = 128;
+
+  CubeMap y_maps[N_COEFFS];
+
+  float **y_data[N_COEFFS];
+  for (int i = 0; i < N_COEFFS; i++)
+  {
+    y_data[i] = new float*[6];
+    for (int j = 0; j < 6; j++)
+    {
+      y_data[i][j] = new float[Y_MAP_SIZE*Y_MAP_SIZE];
+    }
+  }
+
   cout << " * Generating Y data ... ";
-  fill_sh_cube_maps(h_data, CUBE_MAP_SIZE,
-    [l_coeff, h_coeff, samples](double theta, double phi, double *coeffs)
+  fill_sh_cube_maps(y_data, Y_MAP_SIZE,
+    [](double theta, double phi, double *coeffs)
     {
       for (int l = 0; l < N_BANDS; l++)
       {
@@ -378,8 +392,6 @@ int main(int argc, char** argv)
           coeffs[index] = SH(l,m,theta,phi);
         }
       }
-
-      SH_product(l_coeff, h_coeff, coeffs);
     });
   cout << "done." << endl;
 
@@ -387,8 +399,8 @@ int main(int argc, char** argv)
   for (int i = 0; i < N_COEFFS; i++)
   {
     glActiveTexture(GL_TEXTURE0+tex_offset+N_COEFFS+i);
-    h_maps[i].build();
-    h_maps[i].load_cube(h_data[i], CUBE_MAP_SIZE, CUBE_MAP_SIZE,
+    y_maps[i].build();
+    y_maps[i].load_cube(y_data[i], Y_MAP_SIZE, Y_MAP_SIZE,
         GL_R32F, GL_RED, GL_FLOAT);
   }
   cout << "done." << endl;
