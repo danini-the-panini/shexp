@@ -201,6 +201,7 @@ int main(int argc, char** argv)
 {
   GFXBoilerplate gfx;
   gfx.init();
+  glEnable(GL_TEXTURE_CUBE_MAP_SEAMLESS);
 
   ////////////// LOAD SH LUT //////////////
   cout << "Loading SH LUT ... ";
@@ -279,7 +280,7 @@ int main(int argc, char** argv)
   cout << "   - l_coeff" << endl;
   double *l_coeff = new double[N_COEFFS];
 
-  auto sky_function = clearsky(M_PI*0.2, M_PI);
+  auto sky_function = splodge(M_PI*0.3, M_PI);
 
   SH_project_polar_function(sky_function, samples, N_SAMPLES, N_BANDS, light_coeff);
 
