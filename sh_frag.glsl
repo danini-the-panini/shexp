@@ -174,7 +174,7 @@ void main()
       acc_coeff[j] += rlog_coeff[j];
     }
   }
-  float ip = max(dot_sh(lh(v_normal), exp_sh(acc_coeff)),0);
+  float ip = dot_sh(lh(v_normal), exp_sh(acc_coeff));
 
   out_color = vec4(color * ip, 1);
 

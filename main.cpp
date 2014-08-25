@@ -53,6 +53,15 @@ void mouse_callback(GLFWwindow *window, double x, double y)
   my = y;
 }
 
+bool paused = false;
+void my_key_callback(GLFWwindow *win, int key, int scancode, int action, int mods)
+{
+  key_callback(win, key, scancode, action, mods);
+
+  if (key == GLFW_KEY_TAB && action == GLFW_PRESS)
+    paused = !paused;
+}
+
 double safe_acos(double x)
 {
   if (x < -1) return M_PI;
@@ -381,6 +390,7 @@ int main(int argc, char** argv)
   ///////////////// DO THE OPENGL THING ////////////////
 
   glfwSetCursorPosCallback(gfx.window(), mouse_callback);
+  glfwSetKeyCallback(gfx.window(), my_key_callback);
 
   Shader* pass = (new Shader())
     ->vertex("simple_vert.glsl")
@@ -422,8 +432,8 @@ int main(int argc, char** argv)
   vector<GLfloat> sphere_radiuses;
   vector<vec3> colors;
 
-  sphere_positions.push_back(vec3(0,20,0));
-  sphere_radiuses.push_back(20.0f);
+  sphere_positions.push_back(vec3(0,24,0));
+  sphere_radiuses.push_back(24.0f);
   colors.push_back(vec3(0,1,1));
 
   const GLuint levels = 4;
@@ -466,7 +476,8 @@ int main(int argc, char** argv)
     aspect = (float)width/(float)height;
     projection = infinitePerspective(45.0f, aspect, 0.1f);
 
-    x += 0.01f;
+    if (!paused)
+      x += 0.01f;
 
     handleInput(gfx.window());
 
@@ -483,7 +494,7 @@ int main(int argc, char** argv)
     pass->updateMat4("view", camera.getView());
     pass->updateMat4("projection", projection);
 
-    sphere_positions[0] = vec3(0,30+10*sin(x),0);
+    sphere_positions[0] = vec3(0,34+10*sin(x),0);
     transforms[0].set_translation(sphere_positions[0]);
 
     for (int j = 0; j < levels; j++)
