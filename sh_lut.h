@@ -12,6 +12,6 @@ double q(double x);
 // takes n_points 'samples' from the function
 // and stores them in data
 // data should be of size n_points*N_COEFF
-void SH_make_lut(double* data, int n_points);
+void SH_make_lut(double* data, double* a, double* b, int n_points);
 
 #endif // SH_LUT_H

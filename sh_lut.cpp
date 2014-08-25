@@ -20,7 +20,15 @@ double q(double x)
   return log(x)/(x-1);
 }
 
-void SH_make_lut(double* data, int n_points)
+double dot_sh(double *x, double *y)
+{
+  double z = 0;
+  for (int i = 0; i < N_COEFFS; i++)
+    z += x[i]*y[i];
+  return z;
+}
+
+void SH_make_lut(double* data, double* a, double* b, int n_points)
 {
   typedef Matrix<double,N_COEFFS,N_COEFFS> MatrixSH;
   typedef Matrix<double,N_COEFFS,1> VectorSH;
@@ -38,6 +46,10 @@ void SH_make_lut(double* data, int n_points)
   // each slice corresponds to a set of SH coeffs for a sample point on the LUT
   double** slices = new double*[n_points];
   double* temp_matrix = new double[N_COEFFS*N_COEFFS];
+
+  double *f_hat, *g_hat;
+  f_hat = new double[N_COEFFS];
+  g_hat = new double[N_COEFFS];
 
   for (int i = 0; i < n_points; i++)
   {
@@ -75,10 +87,17 @@ void SH_make_lut(double* data, int n_points)
     MatrixSH mg = eigensolver.eigenvectors() * d * eigensolver.eigenvectors().transpose();
     VectorSH f = mg * (v - SH_UNIT);
 
-    //cout << "f[" << (t/M_PI)*180.0 << "] = " << f << endl;
-
     // copy the result into the data array
     memcpy(data+i*N_COEFFS, &f[0], N_COEFFS);
+
+    // calculate a and b
+    f_hat[0] = 0;
+    memcpy(f_hat+1, &f[1], N_COEFFS-1);
+    for (int j = 0; j < N_COEFFS; j++)
+      g_hat[j] = slices[i][j] * exp(-f[0]/sqrt(4.0*M_PI));
+
+    a[i] = g_hat[0]/sqrt(4.0*M_PI);
+    b[i] = dot_sh(g_hat, f_hat)/dot_sh(f_hat,f_hat);
   }
 
   for (int i = 0; i < n_points; i++)
@@ -87,6 +106,8 @@ void SH_make_lut(double* data, int n_points)
   }
   delete [] slices;
   delete [] temp_matrix;
+  delete [] f_hat;
+  delete [] g_hat;
 }
 
 int main(int argc, char** argv)
@@ -95,8 +116,10 @@ int main(int argc, char** argv)
   int sh_lut_size = N_COEFFS*lut_size;
 
   double* sh_logs = new double[sh_lut_size];
+  double* a = new double[lut_size];
+  double* b = new double[lut_size];
 
-  SH_make_lut(sh_logs, lut_size);
+  SH_make_lut(sh_logs, a, b, lut_size);
 
   cout << lut_size << endl;
 
@@ -104,6 +127,8 @@ int main(int argc, char** argv)
   {
     cout << sh_logs[i] << " ";
   }
+  for (int i= 0; i < lut_size; i++) cout << a[i] << " ";
+  for (int i= 0; i < lut_size; i++) cout << b[i] << " ";
 
   delete [] sh_logs;
 

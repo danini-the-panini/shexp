@@ -14,7 +14,8 @@ uniform vec3 color;
 uniform float radiuses[N];
 uniform vec3 positions[N];
 
-uniform sampler2D sh_lut;
+uniform float ab_min = 0, ab_max = 5.16;
+uniform sampler2D sh_lut, a_lut, b_lut;
 uniform samplerCube h_maps[N_COEFFS];
 
 float[N_COEFFS] window(float[N_COEFFS] c)
@@ -101,6 +102,42 @@ float dot_sh(float[N_COEFFS] a, float[N_COEFFS] b)
   return sum;
 }
 
+float sh_length(float[N_COEFFS] x)
+{
+  float l = 0;
+  for (int i = 0; i < N_COEFFS; i++)
+  {
+    l += x[i]*x[i];
+  }
+  return sqrt(l);
+}
+
+float unlerp(float a, float b, float x)
+{
+  return (x-a)/(b-a);
+}
+
+float[N_COEFFS] exp_sh(float[N_COEFFS] f)
+{
+  float f_len = sh_length(f);
+
+  float[N_COEFFS] g;
+
+  float e = exp(f[0]/sqrt(4.0/PI));
+
+  float u = unlerp(ab_min, ab_max, f_len);
+  float a = texture(a_lut, vec2(0.5, u)).r;
+  float b = texture(b_lut, vec2(0.5, u)).r;
+
+  g[0] = a*sqrt(4.0*PI)*e;
+  for (int i = 1; i < N_COEFFS; i++)
+  {
+    g[i] = b*f[i]*e;
+  }
+
+  return g;
+}
+
 float angular_radius(float d, float r)
 {
   return asin(r/d);
@@ -135,9 +172,7 @@ void main()
       acc_coeff[j] += rlog_coeff[j];
     }
   }
-  acc_coeff[0] += sqrt(4*PI);
-
-  float ip = dot_sh(lh(v_normal), acc_coeff);
+  float ip = max(dot_sh(lh(v_normal), exp_sh(acc_coeff)),0);
 
   out_color = vec4(color * ip, 1);
 

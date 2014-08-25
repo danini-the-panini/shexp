@@ -80,6 +80,11 @@ spherical_function overcast()
   };
 }
 
+double clamp(double x, double a, double b)
+{
+  return min(max(x,a),b);
+}
+
 spherical_function clearsky(const double sun_theta, const double sun_phi, const double scale = 0.2)
 {
   const double Z = M_PI/2.0 - sun_theta;
@@ -89,7 +94,7 @@ spherical_function clearsky(const double sun_theta, const double sun_phi, const 
     double cos_gamma = cos(gamma);
     double num = (0.91f + 10 * exp(-3 * gamma) + 0.45 * cos_gamma * cos_gamma) * (1 - exp(-0.32f / cos(theta)));
     double denom = (0.91f + 10 * exp(-3 * Z) + 0.45 * cos_Z * cos_Z) * (1 - exp(-0.32f));
-    return max(scale * num / denom, 0.0);
+    return clamp(scale * num / denom, 0.0, 1.0);
   };
 }
 
@@ -182,6 +187,16 @@ CubeMap gen_cube_map(const GLsizei size, spherical_function fn,
   return map;
 }
 
+float sh_length(const float *x)
+{
+  float l = 0;
+  for (int i = 0; i < N_COEFFS; i++)
+  {
+    l += x[i]*x[i];
+  }
+  return sqrt(l);
+}
+
 int main(int argc, char** argv)
 {
   GFXBoilerplate gfx;
@@ -190,7 +205,7 @@ int main(int argc, char** argv)
   ////////////// LOAD SH LUT //////////////
   cout << "Loading SH LUT ... ";
 
-  Texture2d sh_lut;
+  Texture2d sh_lut, a_lut, b_lut;
 
   ifstream in(argc > 1 ? argv[0] : "sh_lut.txt");
   if (!in)
@@ -201,6 +216,8 @@ int main(int argc, char** argv)
   int lut_size;
   in >> lut_size;
   float* sh_logs = new float[lut_size*N_COEFFS];
+  float* a_coeffs = new float[lut_size];
+  float* b_coeffs = new float[lut_size];
 
   double tmp;
   for (int i = 0; i < lut_size*N_COEFFS; i++)
@@ -208,13 +225,37 @@ int main(int argc, char** argv)
     in >> tmp;
     sh_logs[i] = static_cast<float>(tmp);
   }
-
   for (int i = 0; i < lut_size; i++)
-    sh_logs[i] = (float)sh_logs[i];
+  {
+    in >> tmp;
+    a_coeffs[i] = static_cast<float>(tmp);
+  }
+  for (int i = 0; i < lut_size; i++)
+  {
+    in >> tmp;
+    b_coeffs[i] = static_cast<float>(tmp);
+  }
 
-  glActiveTexture(GL_TEXTURE0);
+  cout << "--- SH LENGTHS ---" << endl;
+  for (int i = 0; i < lut_size; i++)
+  {
+    cout << sh_length(sh_logs+i*N_COEFFS) << endl;
+  }
+  cout << "------------------" << endl;
+
+  GLuint tex_offset = 0;
+
+  glActiveTexture(GL_TEXTURE0+(tex_offset++));
   sh_lut.build();
   sh_lut.load_tex(sh_logs, N_COEFFS, lut_size, GL_R32F, GL_RED, GL_FLOAT);
+
+  glActiveTexture(GL_TEXTURE0+(tex_offset++));
+  a_lut.build();
+  a_lut.load_tex(a_coeffs, 1, lut_size, GL_R32F, GL_RED, GL_FLOAT);
+
+  glActiveTexture(GL_TEXTURE0+(tex_offset++));
+  b_lut.build();
+  b_lut.load_tex(b_coeffs, 1, lut_size, GL_R32F, GL_RED, GL_FLOAT);
 
   cout << "done." << endl;
 
@@ -315,7 +356,7 @@ int main(int argc, char** argv)
   cout << " * Loading maps into textures ... ";
   for (int i = 0; i < N_COEFFS; i++)
   {
-    glActiveTexture(GL_TEXTURE1+i);
+    glActiveTexture(GL_TEXTURE0+tex_offset+i);
     h_maps[i].build();
     h_maps[i].load_cube(h_data[i], CUBE_MAP_SIZE, CUBE_MAP_SIZE,
         GL_R32F, GL_RED, GL_FLOAT);
@@ -366,9 +407,11 @@ int main(int argc, char** argv)
   int indices[N_COEFFS];
   for (int i = 0; i < N_COEFFS; i++)
   {
-    indices[i] = 1+i;
+    indices[i] = tex_offset+i;
   }
   pass->updateInt("sh_lut", 0);
+  pass->updateInt("a_lut", 1);
+  pass->updateInt("b_lut", 2);
   pass->updateInts("h_maps", indices, N_COEFFS);
 
   skybox->use();
