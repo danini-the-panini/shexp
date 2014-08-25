@@ -235,6 +235,39 @@ CubeMap gen_cube_map(const GLsizei size, spherical_function fn,
   return map;
 }
 
+void gen_sh_cube_maps(const GLsizei size, spherical_sh_function fn,
+    GLint internalFormat, GLenum format, GLenum type, GLuint tex_offset, CubeMap *result)
+{
+  float **data[N_COEFFS];
+  for (int i = 0; i < N_COEFFS; i++)
+  {
+    data[i] = new float*[6];
+    for (int j = 0; j < 6; j++)
+    {
+      data[i][j] = new float[size*size];
+    }
+  }
+
+  fill_sh_cube_maps(data, size, fn);
+
+  for (int i = 0; i < N_COEFFS; i++)
+  {
+    glActiveTexture(GL_TEXTURE0+tex_offset+i);
+    result[i].build();
+    result[i].load_cube(data[i], size, size,
+        internalFormat, format, type);
+  }
+
+  for (int i = 0; i < N_COEFFS; i++)
+  {
+    for (int j = 0; j < 6; j++)
+    {
+      delete [] data[i][j];
+    }
+    delete [] data[i];
+  }
+}
+
 float sh_length(const float *x)
 {
   float l = 0;
@@ -329,92 +362,40 @@ int main(int argc, char** argv)
 
   const int H_MAP_SIZE = 8;
 
-  CubeMap h_maps[N_COEFFS];
-
-  float **h_data[N_COEFFS];
-  for (int i = 0; i < N_COEFFS; i++)
+  auto h_map_function = [l_coeff, h_coeff, samples](double theta, double phi, double *coeffs)
   {
-    h_data[i] = new float*[6];
-    for (int j = 0; j < 6; j++)
+    SH_project_polar_function(h_function(theta, phi), samples, N_SAMPLES, N_BANDS, h_coeff);
+
+    for (int h = 0; h < N_COEFFS; h++)
     {
-      h_data[i][j] = new float[H_MAP_SIZE*H_MAP_SIZE];
+      h_coeff[h] /= M_PI;
     }
-  }
 
-  cout << " * Generating H data ... ";
-  fill_sh_cube_maps(h_data, H_MAP_SIZE,
-    [l_coeff, h_coeff, samples](double theta, double phi, double *coeffs)
-    {
-      SH_project_polar_function(h_function(theta, phi), samples, N_SAMPLES, N_BANDS, h_coeff);
+    SH_product(l_coeff, h_coeff, coeffs);
+  };
 
-      for (int h = 0; h < N_COEFFS; h++)
-      {
-        h_coeff[h] /= M_PI;
-      }
-
-      SH_product(l_coeff, h_coeff, coeffs);
-    });
-  cout << "done." << endl;
-
-  cout << " * Loading H maps into textures ... ";
-  for (int i = 0; i < N_COEFFS; i++)
-  {
-    glActiveTexture(GL_TEXTURE0+tex_offset+i);
-    h_maps[i].build();
-    h_maps[i].load_cube(h_data[i], H_MAP_SIZE, H_MAP_SIZE,
-        GL_R32F, GL_RED, GL_FLOAT);
-  }
-  cout << "done." << endl;
+  CubeMap h_maps[N_COEFFS];
+  gen_sh_cube_maps(H_MAP_SIZE, h_map_function, GL_R32F, GL_RED, GL_FLOAT, tex_offset, &h_maps[0]);
 
   const int Y_MAP_SIZE = 128;
 
-  CubeMap y_maps[N_COEFFS];
-
-  float **y_data[N_COEFFS];
-  for (int i = 0; i < N_COEFFS; i++)
+  auto y_map_function = [](double theta, double phi, double *coeffs)
   {
-    y_data[i] = new float*[6];
-    for (int j = 0; j < 6; j++)
+    for (int l = 0; l < N_BANDS; l++)
     {
-      y_data[i][j] = new float[Y_MAP_SIZE*Y_MAP_SIZE];
-    }
-  }
-
-  cout << " * Generating Y data ... ";
-  fill_sh_cube_maps(y_data, Y_MAP_SIZE,
-    [](double theta, double phi, double *coeffs)
-    {
-      for (int l = 0; l < N_BANDS; l++)
+      for (int m = -l; m <= l; m++)
       {
-        for (int m = -l; m <= l; m++)
-        {
-          int index = l*(l+1)+m;
-          coeffs[index] = SH(l,m,theta,phi);
-        }
+        int index = l*(l+1)+m;
+        coeffs[index] = SH(l,m,theta,phi);
       }
-    });
-  cout << "done." << endl;
+    }
+  };
 
-  cout << " * Loading Y maps into textures ... ";
-  for (int i = 0; i < N_COEFFS; i++)
-  {
-    glActiveTexture(GL_TEXTURE0+tex_offset+N_COEFFS+i);
-    y_maps[i].build();
-    y_maps[i].load_cube(y_data[i], Y_MAP_SIZE, Y_MAP_SIZE,
-        GL_R32F, GL_RED, GL_FLOAT);
-  }
-  cout << "done." << endl;
+  CubeMap y_maps[N_COEFFS];
+  gen_sh_cube_maps(Y_MAP_SIZE, y_map_function, GL_R32F, GL_RED, GL_FLOAT, tex_offset+N_COEFFS, &y_maps[0]);
 
   delete [] l_coeff;
   delete [] h_coeff;
-  for (int i = 0; i < N_COEFFS; i++)
-  {
-    for (int j = 0; j < 6; j++)
-    {
-      delete [] h_data[i][j];
-    }
-    delete [] h_data[i];
-  }
 
   cout << "done." << endl;
 
