@@ -81,8 +81,8 @@ float[N_COEFFS] rotate_to(float[N_COEFFS] sh, vec3 v)
   float[N_COEFFS] yv = y(v);
   float sh0 = sh[0]/sqrt(4*PI);
   float sh1 = sh[2]/sqrt((4*PI)/3);
-  float sh2 = sh[6]/sqrt((4*PI)/3);
-  //float sh3 = sh[12]/sqrt((4*PI)/3);
+  float sh2 = sh[6]/sqrt((4*PI)/5);
+  //float sh3 = sh[12]/sqrt((4*PI)/7);
   // ...
 
   return float[N_COEFFS](
