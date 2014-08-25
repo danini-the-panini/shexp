@@ -283,15 +283,15 @@ int main(int argc, char** argv)
 
   cout << " * Allocating ... " << endl;
   cout << "   - light_coeff" << endl;
-  double *light_coeff = new double[N_COEFFS];
+  double *l_coeff = new double[N_COEFFS];
   cout << "   - h_coeff" << endl;
   double *h_coeff = new double[N_COEFFS];
   cout << "   - l_coeff" << endl;
-  double *l_coeff = new double[N_COEFFS];
+  double *lh_coeff = new double[N_COEFFS];
 
   auto sky_function = clearsky(M_PI*0.2, M_PI);
 
-  SH_project_polar_function(sky_function, samples, N_SAMPLES, N_BANDS, light_coeff);
+  SH_project_polar_function(sky_function, samples, N_SAMPLES, N_BANDS, l_coeff);
 
   const int CUBE_MAP_SIZE = 8;
 
@@ -344,10 +344,10 @@ int main(int argc, char** argv)
           h_coeff[h] /= M_PI;
         }
 
-        SH_product(light_coeff, h_coeff, l_coeff);
+        SH_product(l_coeff, h_coeff, lh_coeff);
 
         for(int index=0; index < N_COEFFS; ++index) {
-          h_data[index][k][i*CUBE_MAP_SIZE+j] = l_coeff[index];
+          h_data[index][k][i*CUBE_MAP_SIZE+j] = lh_coeff[index];
         }
 
         //for(int l=0; l<N_BANDS; ++l) {
@@ -373,9 +373,9 @@ int main(int argc, char** argv)
   }
   cout << "done." << endl;
 
-  delete [] light_coeff;
-  delete [] h_coeff;
   delete [] l_coeff;
+  delete [] h_coeff;
+  delete [] lh_coeff;
   for (int i = 0; i < N_COEFFS; i++)
   {
     for (int j = 0; j < 6; j++)
