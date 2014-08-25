@@ -20,6 +20,7 @@ typedef OrthoRotMatCamera<float, highp> ORMCamF;
 ORMCamF camera(ORMCamF::vec3_type(0,30,-50));
 
 typedef function<double(double,double)> spherical_function;
+typedef function<void(double,double,double*)> spherical_sh_function;
 
 const int KEYS[] = {GLFW_KEY_W, GLFW_KEY_S, GLFW_KEY_A, GLFW_KEY_D,
   GLFW_KEY_SPACE, GLFW_KEY_LEFT_CONTROL, GLFW_KEY_E, GLFW_KEY_Q};
@@ -103,7 +104,7 @@ spherical_function clearsky(const double sun_theta, const double sun_phi, const 
     double cos_gamma = cos(gamma);
     double num = (0.91f + 10 * exp(-3 * gamma) + 0.45 * cos_gamma * cos_gamma) * (1 - exp(-0.32f / cos(theta)));
     double denom = (0.91f + 10 * exp(-3 * Z) + 0.45 * cos_Z * cos_Z) * (1 - exp(-0.32f));
-    return clamp(scale * num / denom, 0.0, 1.0);
+    return max(scale * num / denom, 0.0);
   };
 }
 
@@ -171,6 +172,44 @@ void fill_cube_map(float ** data, const GLsizei size,
         convert_to_polar(x,y,z,&n_radius,&n_theta,&n_phi);
 
         data[k][i*size+j] = (float)fn(n_theta, n_phi);
+      }
+    }
+  }
+}
+
+void fill_sh_cube_maps(float *** data, const GLsizei size, spherical_sh_function fn)
+{
+  double *coeffs = new double[N_COEFFS];
+  float GU = size*0.5f;
+  for (int i = 0; i < size; i++)
+  {
+    for (int j = 0; j < size; j++)
+    {
+      float u = (float)j - GU + 0.5f;
+      float v = (float)i - GU + 0.5f;
+
+      vec3 d[6] = {
+        vec3( GU,  -v,  -u),
+        vec3(-GU,  -v,   u),
+        vec3(  u,  GU,   v),
+        vec3(  u, -GU,  -v),
+        vec3(  u,  -v,  GU),
+        vec3( -u,  -v, -GU)
+      };
+
+      for (int k = 0; k < 6; k++)
+      {
+        double x = d[k].x, y = d[k].y, z = d[k].z;
+
+        double n_radius, n_theta, n_phi;
+
+        convert_to_polar(x,y,z,&n_radius,&n_theta,&n_phi);
+
+        fn(n_theta, n_phi, coeffs);
+
+        for(int index=0; index < N_COEFFS; ++index) {
+          data[index][k][i*size+j] = coeffs[index];
+        }
       }
     }
   }
@@ -281,13 +320,8 @@ int main(int argc, char** argv)
   }
   SH_setup_spherical_samples(samples, SQRT_N_SAMPLES, N_BANDS);
 
-  cout << " * Allocating ... " << endl;
-  cout << "   - light_coeff" << endl;
   double *l_coeff = new double[N_COEFFS];
-  cout << "   - h_coeff" << endl;
   double *h_coeff = new double[N_COEFFS];
-  cout << "   - l_coeff" << endl;
-  double *lh_coeff = new double[N_COEFFS];
 
   auto sky_function = clearsky(M_PI*0.2, M_PI);
 
@@ -295,9 +329,7 @@ int main(int argc, char** argv)
 
   const int CUBE_MAP_SIZE = 8;
 
-  cout << "   - h_maps" << endl;
   CubeMap h_maps[N_COEFFS];
-  cout << "   - h_data" << endl;
   float **h_data[N_COEFFS];
   for (int i = 0; i < N_COEFFS; i++)
   {
@@ -307,60 +339,20 @@ int main(int argc, char** argv)
       h_data[i][j] = new float[CUBE_MAP_SIZE*CUBE_MAP_SIZE];
     }
   }
-  cout << " done." << endl;
 
   cout << " * Generating data ... \033[s";
-  float GU = CUBE_MAP_SIZE*0.5f;
-  for (int i = 0; i < CUBE_MAP_SIZE; i++)
-  {
-    for (int j = 0; j < CUBE_MAP_SIZE; j++)
+  fill_sh_cube_maps(h_data, CUBE_MAP_SIZE,
+    [l_coeff, h_coeff, samples](double theta, double phi, double *coeffs)
     {
-      float u = (float)j - GU + 0.5f;
-      float v = (float)i - GU + 0.5f;
+      SH_project_polar_function(h_function(theta, phi), samples, N_SAMPLES, N_BANDS, h_coeff);
 
-      vec3 d[6] = {
-        vec3( GU,  -v,  -u),
-        vec3(-GU,  -v,   u),
-        vec3(  u,  GU,   v),
-        vec3(  u, -GU,  -v),
-        vec3(  u,  -v,  GU),
-        vec3( -u,  -v, -GU)
-      };
-
-      for (int k = 0; k < 6; k++)
+      for (int h = 0; h < N_COEFFS; h++)
       {
-        cout << "( " << i << ", " << j << ", " << k << " )";
-
-        double x = d[k].x, y = d[k].y, z = d[k].z;
-
-        double n_radius, n_theta, n_phi;
-
-        convert_to_polar(x,y,z,&n_radius,&n_theta,&n_phi);
-
-        SH_project_polar_function(h_function(n_theta, n_phi), samples, N_SAMPLES, N_BANDS, h_coeff);
-
-        for (int h = 0; h < N_COEFFS; h++)
-        {
-          h_coeff[h] /= M_PI;
-        }
-
-        SH_product(l_coeff, h_coeff, lh_coeff);
-
-        for(int index=0; index < N_COEFFS; ++index) {
-          h_data[index][k][i*CUBE_MAP_SIZE+j] = lh_coeff[index];
-        }
-
-        //for(int l=0; l<N_BANDS; ++l) {
-          //for(int m=-l; m<=l; ++m) {
-            //int index = l*(l+1)+m;
-            //h_data[index][k][i*CUBE_MAP_SIZE+j] = (float)SH(l,m,n_theta,n_phi);
-          //}
-        //}
-
-        cout << "\033[u\033[K";
+        h_coeff[h] /= M_PI;
       }
-    }
-  }
+
+      SH_product(l_coeff, h_coeff, coeffs);
+    });
   cout << "done." << endl;
 
   cout << " * Loading maps into textures ... ";
@@ -375,7 +367,6 @@ int main(int argc, char** argv)
 
   delete [] l_coeff;
   delete [] h_coeff;
-  delete [] lh_coeff;
   for (int i = 0; i < N_COEFFS; i++)
   {
     for (int j = 0; j < 6; j++)
