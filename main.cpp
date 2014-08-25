@@ -295,7 +295,6 @@ int main(int argc, char** argv)
   glEnable(GL_TEXTURE_CUBE_MAP_SEAMLESS);
 
   ////////////// LOAD SH LUT //////////////
-  cout << "Loading SH LUT ... " << endl;
 
   Texture2d sh_lut, a_lut, b_lut, len_lut;
 
@@ -367,10 +366,12 @@ int main(int argc, char** argv)
   len_lut.build();
   len_lut.load_tex(inv_lens, 1, lut_size, GL_R32F, GL_RED, GL_FLOAT);
 
-  cout << "done." << endl;
+  delete [] sh_logs;
+  delete [] a_coeffs;
+  delete [] b_coeffs;
+  delete [] inv_lens;
 
   ////////////// GENERATE LH CUBEMAPS ////////////
-  cout << "Loading LH CUBEMAPS ... " << endl;
 
   const int SQRT_N_SAMPLES = 100;
   const int N_SAMPLES = SQRT_N_SAMPLES*SQRT_N_SAMPLES;
@@ -403,7 +404,9 @@ int main(int argc, char** argv)
   };
 
   CubeMap h_maps[N_COEFFS];
+  cout << "Loading H map ... " << endl;
   gen_sh_cube_maps(H_MAP_SIZE, h_map_function, GL_R32F, GL_RED, GL_FLOAT, tex_offset, &h_maps[0]);
+  cout << "done." << endl;
 
   const int Y_MAP_SIZE = 128;
 
@@ -420,12 +423,12 @@ int main(int argc, char** argv)
   };
 
   CubeMap y_maps[N_COEFFS];
+  cout << "Loading Y map ... " << endl;
   gen_sh_cube_maps(Y_MAP_SIZE, y_map_function, GL_R32F, GL_RED, GL_FLOAT, tex_offset+N_COEFFS, &y_maps[0]);
+  cout << "done." << endl;
 
   delete [] l_coeff;
   delete [] h_coeff;
-
-  cout << "done." << endl;
 
   ///////////////// DO THE OPENGL THING ////////////////
 
@@ -580,6 +583,5 @@ int main(int argc, char** argv)
   delete pass;
   gfx.cleanup();
 
-  delete [] sh_logs;
   return 0;
 }
