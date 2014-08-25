@@ -14,8 +14,8 @@ uniform vec3 color;
 uniform float radiuses[N];
 uniform vec3 positions[N];
 
-uniform float ab_min = 0, ab_max = 5.16;
-uniform sampler2D sh_lut, a_lut, b_lut;
+uniform float max_zh_len;
+uniform sampler2D sh_lut, a_lut, b_lut, len_lut;
 uniform samplerCube h_maps[N_COEFFS];
 uniform samplerCube y_maps[N_COEFFS];
 
@@ -109,7 +109,7 @@ float[N_COEFFS] exp_sh(float[N_COEFFS] f)
 
   float e = exp(f[0]/sqrt(4.0/PI));
 
-  float u = unlerp(ab_min, ab_max, f_len);
+  float u = texture(len_lut, vec2(0.5,clamp(f_len/max_zh_len,0,1))).r;
   float a = texture(a_lut, vec2(0.5, u)).r;
   float b = texture(b_lut, vec2(0.5, u)).r;
 

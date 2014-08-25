@@ -278,6 +278,16 @@ float sh_length(const float *x)
   return sqrt(l);
 }
 
+float unlerp(float a, float b, float x)
+{
+  return (x-a)/(b-a);
+}
+
+float lerp(float a, float b, float u)
+{
+  return a*(1-u) + b*u;
+}
+
 int main(int argc, char** argv)
 {
   GFXBoilerplate gfx;
@@ -285,9 +295,9 @@ int main(int argc, char** argv)
   glEnable(GL_TEXTURE_CUBE_MAP_SEAMLESS);
 
   ////////////// LOAD SH LUT //////////////
-  cout << "Loading SH LUT ... ";
+  cout << "Loading SH LUT ... " << endl;
 
-  Texture2d sh_lut, a_lut, b_lut;
+  Texture2d sh_lut, a_lut, b_lut, len_lut;
 
   ifstream in(argc > 1 ? argv[0] : "sh_lut.txt");
   if (!in)
@@ -300,6 +310,7 @@ int main(int argc, char** argv)
   float* sh_logs = new float[lut_size*N_COEFFS];
   float* a_coeffs = new float[lut_size];
   float* b_coeffs = new float[lut_size];
+  float* inv_lens = new float[lut_size];
 
   double tmp;
   for (int i = 0; i < lut_size*N_COEFFS; i++)
@@ -318,12 +329,25 @@ int main(int argc, char** argv)
     b_coeffs[i] = static_cast<float>(tmp);
   }
 
-  cout << "--- SH LENGTHS ---" << endl;
+  const float MAX_ZH_LENGTH = 5.181689853f;
+
+  float lengths[lut_size];
   for (int i = 0; i < lut_size; i++)
   {
-    cout << sh_length(sh_logs+i*N_COEFFS) << endl;
+    lengths[i] = sh_length(sh_logs+i*N_COEFFS)/MAX_ZH_LENGTH;
   }
-  cout << "------------------" << endl;
+
+  for (int i = 0; i < lut_size; i++)
+  {
+    float fx = (float)i/(float)lut_size;
+    int j = 1;
+    while (lengths[j] < fx && j < lut_size) j++;
+
+    float u = unlerp(lengths[j-1], lengths[j], fx);
+
+    float x = (float)j - 1.f + u;
+    inv_lens[i] = x/(float)lut_size;
+  }
 
   GLuint tex_offset = 0;
 
@@ -338,6 +362,10 @@ int main(int argc, char** argv)
   glActiveTexture(GL_TEXTURE0+(tex_offset++));
   b_lut.build();
   b_lut.load_tex(b_coeffs, 1, lut_size, GL_R32F, GL_RED, GL_FLOAT);
+
+  glActiveTexture(GL_TEXTURE0+(tex_offset++));
+  len_lut.build();
+  len_lut.load_tex(inv_lens, 1, lut_size, GL_R32F, GL_RED, GL_FLOAT);
 
   cout << "done." << endl;
 
@@ -437,6 +465,8 @@ int main(int argc, char** argv)
   pass->updateInt("sh_lut", 0);
   pass->updateInt("a_lut", 1);
   pass->updateInt("b_lut", 2);
+  pass->updateInt("len_lut", 3);
+  pass->updateFloat("max_zh_len", MAX_ZH_LENGTH);
   pass->updateInts("h_maps", indices, N_COEFFS);
   pass->updateInts("y_maps", y_indices, N_COEFFS);
 
