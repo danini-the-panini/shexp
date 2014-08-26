@@ -9,9 +9,12 @@
 using namespace std;
 using namespace Eigen;
 
-double g(double t, double theta, double)
+SH_polar_fn g_function(const double t)
 {
-  return (theta < t) ? 0.0 : 1.0;
+  return [t](double theta, double phi)
+  {
+    return (theta < t) ? 0.0 : 1.0;
+  };
 }
 
 // Ren et al. 2006 eq. 31
@@ -43,8 +46,8 @@ void SH_make_lut(double* data, double* a, double* b, int n_points)
   }
   SH_setup_spherical_samples(samples, SQRT_N_SAMPLES, N_BANDS);
 
-  // each slice corresponds to a set of SH coeffs for a sample point on the LUT
-  double** slices = new double*[n_points];
+  // the slice corresponds to a set of SH coeffs for a sample point on the LUT
+  double* slice = new double[N_COEFFS];
   double* temp_matrix = new double[N_COEFFS*N_COEFFS];
 
   double *f_hat, *g_hat;
@@ -55,17 +58,11 @@ void SH_make_lut(double* data, double* a, double* b, int n_points)
   {
     double t = ((double)i/(double)n_points)*(M_PI*0.5);
 
-    slices[i] = new double[N_COEFFS];
-    SH_project_polar_function(
-        [&] (double theta, double phi)
-        {
-          return g(t,theta,phi);
-        },
-        samples, N_SAMPLES, N_BANDS, slices[i]);
+    SH_project_polar_function(g_function(t), samples, N_SAMPLES, N_BANDS, slice);
 
-    Map<VectorSH> v(slices[i]);
+    Map<VectorSH> v(slice);
 
-    SH_matrix(slices[i],temp_matrix);
+    SH_matrix(slice,temp_matrix);
 
     Map<MatrixSH, Unaligned, Stride<1,N_COEFFS> > m(temp_matrix);
 
@@ -84,8 +81,7 @@ void SH_make_lut(double* data, double* a, double* b, int n_points)
     }
 
     // Ren et al. 2006 eq. 28
-    MatrixSH mg = eigensolver.eigenvectors() * d * eigensolver.eigenvectors().transpose();
-    VectorSH f = mg * (v - SH_UNIT);
+    VectorSH f = eigensolver.eigenvectors() * d * eigensolver.eigenvectors().transpose() * (v - SH_UNIT);
 
     // copy the result into the data array
     memcpy(data+i*N_COEFFS, &f[0], N_COEFFS);
@@ -94,17 +90,13 @@ void SH_make_lut(double* data, double* a, double* b, int n_points)
     f_hat[0] = 0;
     memcpy(f_hat+1, &f[1], N_COEFFS-1);
     for (int j = 0; j < N_COEFFS; j++)
-      g_hat[j] = slices[i][j] * exp(-f[0]/sqrt(4.0*M_PI));
+      g_hat[j] = slice[j] * exp(-f[0]/sqrt(4.0*M_PI));
 
     a[i] = g_hat[0]/sqrt(4.0*M_PI);
     b[i] = dot_sh(g_hat, f_hat)/dot_sh(f_hat,f_hat);
   }
 
-  for (int i = 0; i < n_points; i++)
-  {
-    delete [] slices[i];
-  }
-  delete [] slices;
+  delete [] slice;
   delete [] temp_matrix;
   delete [] f_hat;
   delete [] g_hat;
@@ -112,7 +104,7 @@ void SH_make_lut(double* data, double* a, double* b, int n_points)
 
 int main(int argc, char** argv)
 {
-  int lut_size = argc > 1 ? atoi(argv[1]) : 10;
+  int lut_size = argc > 1 ? atoi(argv[1]) : 16;
   int sh_lut_size = N_COEFFS*lut_size;
 
   double* sh_logs = new double[sh_lut_size];
