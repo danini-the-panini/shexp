@@ -9,7 +9,7 @@
 using namespace std;
 using namespace Eigen;
 
-SH_polar_fn g_function(const double t)
+SH_polar_fn g_polar(const double t)
 {
   return [t](double theta, double phi)
   {
@@ -17,13 +17,22 @@ SH_polar_fn g_function(const double t)
   };
 }
 
+SH_cart_fn g_cart(const double t)
+{
+  const double cos_t = cos(t);
+  return [cos_t](double x, double y, double z)
+  {
+    return z >= cos_t ? 0.0 : 1.0;
+  };
+}
+
 // Ren et al. 2006 eq. 31
 double q(double x)
 {
-  return log(x)/(x-1);
+  return log(x)/(x-1.0);
 }
 
-double dot_sh(double *x, double *y)
+double shdot(double *x, double *y)
 {
   double z = 0;
   for (int i = 0; i < N_COEFFS; i++)
@@ -56,9 +65,18 @@ void SH_make_lut(double* data, double* a, double* b, int n_points)
 
   for (int i = 0; i < n_points; i++)
   {
-    double t = ((double)i/(double)n_points)*(M_PI*0.5);
+    cerr << "======================" << endl;
 
-    SH_project_polar_function(g_function(t), samples, N_SAMPLES, N_BANDS, slice);
+    double t = ((double)i/(double)(n_points-1))*(M_PI*0.5);
+
+    SH_project_polar_function(g_polar(t), samples, N_SAMPLES, N_BANDS, slice);
+
+    for(int l=0; l<N_BANDS; ++l) {
+      for(int m=-l; m<=l; ++m) {
+        int index = l*(l+1)+m;
+        if (m != 0 && l != 0) slice[index] = 0.0;
+      }
+    }
 
     Map<VectorSH> v(slice);
 
@@ -75,7 +93,7 @@ void SH_make_lut(double* data, double* a, double* b, int n_points)
     MatrixSH d;
     d.setZero();
     auto diagonal = d.diagonal();
-    for (int j =- 0; j < N_COEFFS; j++)
+    for (int j = 0; j < N_COEFFS; j++)
     {
       diagonal[j] = q(max(eigensolver.eigenvalues()[j], epsilon));
     }
@@ -83,17 +101,31 @@ void SH_make_lut(double* data, double* a, double* b, int n_points)
     // Ren et al. 2006 eq. 28
     VectorSH f = eigensolver.eigenvectors() * d * eigensolver.eigenvectors().transpose() * (v - SH_UNIT);
 
+    cerr << f << endl;
+    cerr << "----------------------" << endl;
+
     // copy the result into the data array
-    memcpy(data+i*N_COEFFS, &f[0], N_COEFFS);
+    for(int l=0; l<N_BANDS; ++l) {
+      for(int m=-l; m<=l; ++m) {
+        int j = l*(l+1)+m;
+        data[i*N_COEFFS+j] = ((m!=0 && l!=0) ? 0.0 : f[j]);
+      }
+    }
 
     // calculate a and b
     f_hat[0] = 0;
-    memcpy(f_hat+1, &f[1], N_COEFFS-1);
+    for (int j = 1; j < N_COEFFS; j++)
+    {
+      f_hat[j] = f[j];
+    }
+
     for (int j = 0; j < N_COEFFS; j++)
+    {
       g_hat[j] = slice[j] * exp(-f[0]/sqrt(4.0*M_PI));
+    }
 
     a[i] = g_hat[0]/sqrt(4.0*M_PI);
-    b[i] = dot_sh(g_hat, f_hat)/dot_sh(f_hat,f_hat);
+    b[i] = shdot(g_hat, f_hat)/shdot(f_hat,f_hat);
   }
 
   delete [] slice;
@@ -117,9 +149,13 @@ int main(int argc, char** argv)
 
   for (int i = 0; i < sh_lut_size; i++)
   {
-    cout << sh_logs[i] << " ";
+    cout << sh_logs[i];
+
+    if ((i+1)%N_COEFFS == 0) cout << endl;
+    else cout << " ";
   }
   for (int i= 0; i < lut_size; i++) cout << a[i] << " ";
+  cout << endl;
   for (int i= 0; i < lut_size; i++) cout << b[i] << " ";
 
   delete [] sh_logs;

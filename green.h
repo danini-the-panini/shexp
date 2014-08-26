@@ -27,8 +27,15 @@ double K(int l, int m);
 double SH(int l, int m, double theta, double phi);
 
 typedef std::function<double(double,double)> SH_polar_fn;
+typedef std::function<double(double,double,double)> SH_cart_fn;
 void SH_project_polar_function(
   SH_polar_fn fn,
+  const SHSample samples[],
+  int n_samples,
+  int n_bands,
+  double result[]);
+void SH_project_cart_function(
+  SH_cart_fn fn,
   const SHSample samples[],
   int n_samples,
   int n_bands,

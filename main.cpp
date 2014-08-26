@@ -328,7 +328,7 @@ int main(int argc, char** argv)
     b_coeffs[i] = static_cast<float>(tmp);
   }
 
-  const float MAX_ZH_LENGTH = 5.181689853f;
+  const float MAX_ZH_LENGTH = 8.845128074703045f;
 
   float lengths[lut_size];
   for (int i = 0; i < lut_size; i++)
@@ -385,7 +385,7 @@ int main(int argc, char** argv)
   double *l_coeff = new double[N_COEFFS];
   double *h_coeff = new double[N_COEFFS];
 
-  auto sky_function = clearsky(M_PI*0.2, M_PI);
+  auto sky_function = splodge(M_PI*0.2, M_PI);
 
   SH_project_polar_function(sky_function, samples, N_SAMPLES, N_BANDS, l_coeff);
 
@@ -400,7 +400,7 @@ int main(int argc, char** argv)
       h_coeff[h] /= M_PI;
     }
 
-    SH_product(l_coeff, h_coeff, coeffs);
+    SH_product(h_coeff, l_coeff, coeffs);
   };
 
   CubeMap h_maps[N_COEFFS];

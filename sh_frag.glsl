@@ -76,7 +76,7 @@ float[N_COEFFS] rotate_to(float[N_COEFFS] sh, vec3 v)
   );
 }
 
-float dot_sh(float[N_COEFFS] a, float[N_COEFFS] b)
+float shdot(float[N_COEFFS] a, float[N_COEFFS] b)
 {
   float sum = 0;
   for (int i = 0; i < N_COEFFS; i++)
@@ -86,7 +86,7 @@ float dot_sh(float[N_COEFFS] a, float[N_COEFFS] b)
   return sum;
 }
 
-float sh_length(float[N_COEFFS] x)
+float shlen(float[N_COEFFS] x)
 {
   float l = 0;
   for (int i = 0; i < N_COEFFS; i++)
@@ -101,9 +101,9 @@ float unlerp(float a, float b, float x)
   return (x-a)/(b-a);
 }
 
-float[N_COEFFS] exp_sh(float[N_COEFFS] f)
+float[N_COEFFS] shexp(float[N_COEFFS] f)
 {
-  float f_len = sh_length(f);
+  float f_len = shlen(f);
 
   float[N_COEFFS] g;
 
@@ -135,28 +135,28 @@ float[N_COEFFS] get_coeff(vec3 v, float radius)
   float[N_COEFFS] log_coeff;
   for (int j = 0; j < N_COEFFS; j++)
   {
-    log_coeff[j] = texture(sh_lut, vec2(float(j)/float(N_COEFFS),fi)).r;
+    log_coeff[j] = texture(sh_lut, vec2((float(j)+0.5)/float(N_COEFFS),fi)).r;
   }
   return rotate_to(log_coeff, v/d);
 }
 
 void main()
 {
-  float[N_COEFFS] acc_coeff;
-  for (int i = 0; i < N_COEFFS; i ++)
+  float[N_COEFFS] f;
+  for (int i = 0; i < N_COEFFS; i++)
   {
-    acc_coeff[i] = 0;
+    f[i] = 0;
   }
   for (int i = 0; i < N; i++)
   {
     vec3 v = positions[i] - v_position;
-    float[N_COEFFS] rlog_coeff = get_coeff(v, radiuses[i]);
+    float[N_COEFFS] fi = get_coeff(v, radiuses[i]);
     for (int j = 0; j < N_COEFFS; j++)
     {
-      acc_coeff[j] += rlog_coeff[j];
+      f[j] += fi[j];
     }
   }
-  float ip = dot_sh(lh(v_normal), exp_sh(acc_coeff));
+  float ip = shdot(lh(v_normal), shexp(f));
 
   out_color = vec4(color * ip, 1);
 

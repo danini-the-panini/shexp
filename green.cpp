@@ -106,6 +106,30 @@ void SH_project_polar_function(
   }
 }
 
+void SH_project_cart_function(
+  SH_cart_fn fn,
+  const SHSample samples[],
+  int n_samples,
+  int n_bands,
+  double result[])
+{
+  int n_coeff = n_bands*n_bands;
+  const double weight = 4.0*M_PI;
+  // for each sample
+  for(int i=0; i<n_samples; ++i) {
+    double x = samples[i].vec.x;
+    double y = samples[i].vec.y;
+    double z = samples[i].vec.z;
+    for(int n=0; n<n_coeff; ++n) {
+      result[n] += fn(x,y,z) * samples[i].coeff[n];
+    }
+  }
+  // divide the result by weight and number of samples
+  double factor = weight / n_samples;
+  for(int i=0; i<n_coeff; ++i) {
+    result[i] = result[i] * factor;
+  }
+}
 
 void SH_product_tensor(const SHSample samples[],
   int n_samples,

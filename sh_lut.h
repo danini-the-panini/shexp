@@ -1,9 +1,6 @@
 #ifndef SH_LUT_H
 #define SH_LUT_H
 
-// visibility function to be mapped onto SH
-double g(double t, double theta, double);
-
 // log function applied to the diagonal matrix
 // for computing SH log
 double q(double x);
