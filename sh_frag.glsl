@@ -4,7 +4,7 @@
 layout (location = 0) out vec4 out_color;
 
 const int N = 1+(16*4);
-const int N_BANDS = 3;
+const int N_BANDS = 4;
 const int N_COEFFS = N_BANDS*N_BANDS;
 
 in vec3 v_position;
@@ -64,14 +64,14 @@ float[N_COEFFS] rotate_to(float[N_COEFFS] sh, vec3 v)
   float sh0 = sh[0]/sqrt(4*PI);
   float sh1 = sh[2]/sqrt((4*PI)/3);
   float sh2 = sh[6]/sqrt((4*PI)/5);
-  //float sh3 = sh[12]/sqrt((4*PI)/7);
+  float sh3 = sh[12]/sqrt((4*PI)/7);
   // ...
 
   return float[N_COEFFS](
     sh0*yv[0],
     sh1*yv[1],sh1*yv[2],sh1*yv[3],
-    sh2*yv[4],sh2*yv[5],sh2*yv[6],sh2*yv[7],sh2*yv[8]
-    //sh3*yv[9],sh3*yv[10],sh3*yv[11],sh3*yv[12],sh3*yv[13],sh3*yv[14],sh3*yv[15]
+    sh2*yv[4],sh2*yv[5],sh2*yv[6],sh2*yv[7],sh2*yv[8],
+    sh3*yv[9],sh3*yv[10],sh3*yv[11],sh3*yv[12],sh3*yv[13],sh3*yv[14],sh3*yv[15]
     // ...
   );
 }

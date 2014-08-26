@@ -385,7 +385,7 @@ int main(int argc, char** argv)
   double *l_coeff = new double[N_COEFFS];
   double *h_coeff = new double[N_COEFFS];
 
-  auto sky_function = splodge(M_PI*0.2, M_PI);
+  auto sky_function = clearsky(M_PI*0.3, M_PI);
 
   SH_project_polar_function(sky_function, samples, N_SAMPLES, N_BANDS, l_coeff);
 
