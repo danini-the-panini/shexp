@@ -17,7 +17,6 @@ uniform vec3 positions[N];
 uniform float max_zh_len;
 uniform sampler2D sh_lut, a_lut, b_lut, len_lut;
 uniform samplerCube h_maps[N_COEFFS];
-uniform samplerCube y_maps[N_COEFFS];
 
 float[N_COEFFS] window(float[N_COEFFS] c)
 {
@@ -35,36 +34,54 @@ float[N_COEFFS] window(float[N_COEFFS] c)
   return result;
 }
 
-float[N_COEFFS] sh_index(vec3 v, samplerCube maps[N_COEFFS])
+float[N_COEFFS] lh(vec3 v)
 {
   float[N_COEFFS] result;
 
   for(int i = 0; i < N_COEFFS; i++)
   {
-    result[i] = texture(maps[i], v).r;
+    result[i] = texture(h_maps[i], v).r;
   }
 
   return result;
 }
 
-float[N_COEFFS] lh(vec3 v)
-{
-  return sh_index(v, h_maps);
-}
-
 // assume v is normalized!
-float[N_COEFFS] y(vec3 v)
+float[N_COEFFS] y(vec3 vo)
 {
-  return sh_index(v, y_maps);
+  vec3 v = vo.xzy;
+  return float[N_COEFFS](
+    0.5*sqrt(1.0/PI),
+
+    sqrt(3.0/(4.0*PI)) * v.y,
+    sqrt(3.0/(4.0*PI)) * v.z,
+    sqrt(3.0/(4.0*PI)) * v.x,
+
+    0.5*sqrt(15.0/PI)*v.x*v.y,
+    0.5*sqrt(15.0/PI)*v.y*v.z,
+    0.25*sqrt(5.0/PI)*(-(v.x*v.x)-(v.y*v.y)+2.0*(v.z*v.z)),
+    0.5*sqrt(15.0/PI)*v.z*v.x,
+    0.25*sqrt(15.0/PI)*((v.x*v.x)-(v.y*v.y)),
+
+    0.25*sqrt(35.0/(2.0*PI))*(3.0*v.x*v.x - v.y*v.y)*v.y,
+    0.5*sqrt(105.0/PI)*v.x*v.y*v.z,
+    0.25*sqrt(21.0/(2.0*PI))*v.y*(4.0*v.z*v.z-v.x*v.x-v.y*v.y),
+    0.25*sqrt(7.0/PI)*v.z*(2.0*v.z*v.z-3.0*v.x*v.x-3.0*v.y*v.y),
+    0.25*sqrt(21.0/(2.0*PI))*v.x*(4.0*v.z-v.z-v.x*v.x-v.y*v.y),
+    0.25*sqrt(105.0/PI)*(v.x*v.x-v.y*v.y)*v.z,
+    0.25*sqrt(35.0/(2.0*PI))*(v.x*v.x-3.0*v.y*v.y)*v.x
+
+    // ...
+  );
 }
 
 float[N_COEFFS] rotate_to(float[N_COEFFS] sh, vec3 v)
 {
   float[N_COEFFS] yv = y(v);
-  float sh0 = sh[0]/sqrt(4*PI);
-  float sh1 = sh[2]/sqrt((4*PI)/3);
-  float sh2 = sh[6]/sqrt((4*PI)/5);
-  float sh3 = sh[12]/sqrt((4*PI)/7);
+  float sh0 = sh[0]/sqrt(4.0*PI);
+  float sh1 = sh[2]/sqrt((4.0*PI)/3.0);
+  float sh2 = sh[6]/sqrt((4.0*PI)/5.0);
+  float sh3 = sh[12]/sqrt((4.0*PI)/7.0);
   // ...
 
   return float[N_COEFFS](
@@ -137,7 +154,7 @@ float[N_COEFFS] get_coeff(vec3 v, float radius)
   {
     log_coeff[j] = texture(sh_lut, vec2((float(j)+0.5)/float(N_COEFFS),fi)).r;
   }
-  return rotate_to(log_coeff, v/d);
+  return rotate_to(log_coeff, normalize(v));
 }
 
 void main()
@@ -159,7 +176,5 @@ void main()
   float ip = shdot(lh(v_normal), shexp(f));
 
   out_color = vec4(color * ip, 1);
-
-  /*out_color = vec4(texture(h_maps[0], v_normal).r, texture(h_maps[1], v_normal).r, texture(h_maps[2], v_normal).r, 1);*/
 }
 

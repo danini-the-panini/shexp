@@ -408,25 +408,6 @@ int main(int argc, char** argv)
   gen_sh_cube_maps(H_MAP_SIZE, h_map_function, GL_R32F, GL_RED, GL_FLOAT, tex_offset, &h_maps[0]);
   cout << "done." << endl;
 
-  const int Y_MAP_SIZE = 128;
-
-  auto y_map_function = [](double theta, double phi, double *coeffs)
-  {
-    for (int l = 0; l < N_BANDS; l++)
-    {
-      for (int m = -l; m <= l; m++)
-      {
-        int index = l*(l+1)+m;
-        coeffs[index] = SH(l,m,theta,phi);
-      }
-    }
-  };
-
-  CubeMap y_maps[N_COEFFS];
-  cout << "Loading Y map ... " << endl;
-  gen_sh_cube_maps(Y_MAP_SIZE, y_map_function, GL_R32F, GL_RED, GL_FLOAT, tex_offset+N_COEFFS, &y_maps[0]);
-  cout << "done." << endl;
-
   delete [] l_coeff;
   delete [] h_coeff;
 
@@ -471,7 +452,6 @@ int main(int argc, char** argv)
   pass->updateInt("len_lut", 3);
   pass->updateFloat("max_zh_len", MAX_ZH_LENGTH);
   pass->updateInts("h_maps", indices, N_COEFFS);
-  pass->updateInts("y_maps", y_indices, N_COEFFS);
 
   skybox->use();
   skybox->updateInt("map", 42);
