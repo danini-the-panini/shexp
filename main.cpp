@@ -16,6 +16,7 @@
 #include "texture1d.h"
 #include "texture1d_array.h"
 #include "green.h"
+#include "wavefront_mesh.h"
 
 using namespace std;
 
@@ -512,7 +513,10 @@ int main(int argc, char** argv)
           vec3(radiuses_data[i])));
   }
 
-  Transform plane_transform(vec3(0,0,0),quat(1,0,0,0),vec3(200));
+  Transform plane_transform(vec3(0,0,0),quat(1,0,0,0),vec3(1000));
+
+  WavefrontMesh dude("Humanoid_0000.obj");
+  dude.build();
 
   float x = 0.0f;
   int width, height;
@@ -587,6 +591,10 @@ int main(int argc, char** argv)
     glActiveTexture(GL_TEXTURE0+positions_slot);
     positions.load_tex(positions_data, MAX_SPHERES, 3,
         GL_R32F, GL_RED, GL_FLOAT);
+
+    pass->updateMat4("world", mat4(1)); //scale(mat4(1), vec3(0.01)));
+    pass->updateVec3("color", vec3(1,1,1));
+    dude.draw();
 
     for (int i = 0; i < num_spheres; i++)
     {
