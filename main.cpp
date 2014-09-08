@@ -12,6 +12,7 @@
 #include "transform.h"
 #include "texture2d.h"
 #include "cube_map.h"
+#include "cube_map_array.h"
 #include "green.h"
 
 using namespace std;
@@ -177,9 +178,18 @@ void fill_cube_map(float ** data, const GLsizei size,
   }
 }
 
-void fill_sh_cube_maps(float *** data, const GLsizei size, spherical_sh_function fn)
+void fill_sh_cube_map_array(float * data, const GLsizei size, spherical_sh_function fn)
 {
   double *coeffs = new double[N_COEFFS];
+  float ***data_ptr = new float**[N_COEFFS];
+  for (int i = 0; i < N_COEFFS; i++)
+  {
+    data_ptr[i] = new float*[6];
+    for (int j = 0; j < 6; j++)
+    {
+      data_ptr[i][j] = data+i*(6*size*size)+j*(size*size);
+    }
+  }
   float GU = size*0.5f;
   for (int i = 0; i < size; i++)
   {
@@ -208,11 +218,17 @@ void fill_sh_cube_maps(float *** data, const GLsizei size, spherical_sh_function
         fn(n_theta, n_phi, coeffs);
 
         for(int index=0; index < N_COEFFS; ++index) {
-          data[index][k][i*size+j] = coeffs[index];
+          data_ptr[index][k][i*size+j] = coeffs[index];
         }
       }
     }
   }
+  for (int i = 0; i < N_COEFFS; i++)
+  {
+    delete [] data_ptr[i];
+  }
+  delete [] data_ptr;
+  delete [] coeffs;
 }
 
 CubeMap gen_cube_map(const GLsizei size, spherical_function fn,
@@ -235,37 +251,21 @@ CubeMap gen_cube_map(const GLsizei size, spherical_function fn,
   return map;
 }
 
-void gen_sh_cube_maps(const GLsizei size, spherical_sh_function fn,
-    GLint internalFormat, GLenum format, GLenum type, GLuint tex_offset, CubeMap *result)
+CubeMapArray gen_sh_cube_map_array(const GLsizei size, spherical_sh_function fn,
+    GLint internalFormat, GLenum format, GLenum type)
 {
-  float **data[N_COEFFS];
-  for (int i = 0; i < N_COEFFS; i++)
-  {
-    data[i] = new float*[6];
-    for (int j = 0; j < 6; j++)
-    {
-      data[i][j] = new float[size*size];
-    }
-  }
+  float *data = new float[N_COEFFS*6*size*size];
 
-  fill_sh_cube_maps(data, size, fn);
+  fill_sh_cube_map_array(data, size, fn);
 
-  for (int i = 0; i < N_COEFFS; i++)
-  {
-    glActiveTexture(GL_TEXTURE0+tex_offset+i);
-    result[i].build();
-    result[i].load_cube(data[i], size,
-        internalFormat, format, type);
-  }
+  CubeMapArray map;
+  map.build();
+  map.load_cube_array(data, size, N_COEFFS,
+    internalFormat, format, type);
 
-  for (int i = 0; i < N_COEFFS; i++)
-  {
-    for (int j = 0; j < 6; j++)
-    {
-      delete [] data[i][j];
-    }
-    delete [] data[i];
-  }
+  delete [] data;
+
+  return map;
 }
 
 float sh_length(const float *x)
@@ -403,9 +403,9 @@ int main(int argc, char** argv)
     SH_product(h_coeff, l_coeff, coeffs);
   };
 
-  CubeMap h_maps[N_COEFFS];
   cout << "Loading H map ... " << endl;
-  gen_sh_cube_maps(H_MAP_SIZE, h_map_function, GL_R32F, GL_RED, GL_FLOAT, tex_offset, &h_maps[0]);
+  glActiveTexture(GL_TEXTURE0+(tex_offset++));
+  CubeMapArray h_map_array = gen_sh_cube_map_array(H_MAP_SIZE, h_map_function, GL_R32F, GL_RED, GL_FLOAT);
   cout << "done." << endl;
 
   delete [] l_coeff;
@@ -439,19 +439,12 @@ int main(int argc, char** argv)
   sky.build();
 
   pass->use();
-  int indices[N_COEFFS];
-  int y_indices[N_COEFFS];
-  for (int i = 0; i < N_COEFFS; i++)
-  {
-    indices[i] = tex_offset+i;
-    y_indices[i] = indices[i]+N_COEFFS;
-  }
   pass->updateInt("sh_lut", 0);
   pass->updateInt("a_lut", 1);
   pass->updateInt("b_lut", 2);
   pass->updateInt("len_lut", 3);
+  pass->updateInt("h_maps", 4);
   pass->updateFloat("max_zh_len", MAX_ZH_LENGTH);
-  pass->updateInts("h_maps", indices, N_COEFFS);
 
   skybox->use();
   skybox->updateInt("map", 42);

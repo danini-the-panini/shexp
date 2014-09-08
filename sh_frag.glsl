@@ -16,7 +16,7 @@ uniform vec3 positions[N];
 
 uniform float max_zh_len;
 uniform sampler2D sh_lut, a_lut, b_lut, len_lut;
-uniform samplerCube h_maps[N_COEFFS];
+uniform samplerCubeArray h_maps;
 
 float[N_COEFFS] window(float[N_COEFFS] c)
 {
@@ -40,7 +40,7 @@ float[N_COEFFS] lh(vec3 v)
 
   for(int i = 0; i < N_COEFFS; i++)
   {
-    result[i] = texture(h_maps[i], v).r;
+    result[i] = texture(h_maps, vec4(v,float(i))).r;
   }
 
   return result;

@@ -12,6 +12,9 @@ public:
   virtual void load_cube_array(float *, GLsizei, GLsizei,
       GLint, GLenum format, GLenum type);
   virtual void build_impl();
+
+protected:
+
 };
 
 #endif

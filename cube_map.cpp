@@ -46,7 +46,7 @@ load_cube(float **data, GLsizei size,
   for (int i = 0; i < 6; i++)
   {
       glTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X+i, 0, internalFormat,
-              size, 0, format, type, data[i]);
+              size, size, 0, format, type, data[i]);
   }
 }
 

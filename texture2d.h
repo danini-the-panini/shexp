@@ -7,7 +7,7 @@ class Texture2d : public Texture
 {
 public:
   Texture2d();
-  ~Texture2d();
+  virtual ~Texture2d();
 
   virtual void load_tex(const float *, GLsizei, GLsizei, GLint internalFormat, GLenum format, GLenum type);
   virtual void build_impl();

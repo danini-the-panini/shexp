@@ -41,3 +41,8 @@ load_cube_array(float *data, GLsizei size, GLsizei layers,
   glTexImage3D(GL_TEXTURE_CUBE_MAP_ARRAY, 0, internalFormat,
       size, size, layers*6, 0, format, type, data);
 }
+
+void CubeMapArray::
+build_impl()
+{
+}
