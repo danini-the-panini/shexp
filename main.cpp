@@ -1,21 +1,22 @@
 #include <cstdlib>
-#include <iostream>
 #include <fstream>
+#include <iostream>
 
+#include "camera.h"
+#include "cube_map.h"
+#include "cube_map_array.h"
+#include "framebuffer.h"
 #include "gfx_boilerplate.h"
+#include "green.h"
+#include "ndc_quad.h"
+#include "plane.h"
 #include "sh_functions.h"
 #include "shader.h"
 #include "sphere.h"
-#include "plane.h"
-#include "ndc_quad.h"
-#include "camera.h"
-#include "transform.h"
-#include "texture2d.h"
-#include "cube_map.h"
-#include "cube_map_array.h"
 #include "texture1d.h"
 #include "texture1d_array.h"
-#include "green.h"
+#include "texture2d.h"
+#include "transform.h"
 
 using namespace std;
 
@@ -460,15 +461,37 @@ int main(int argc, char** argv)
   glfwSetCursorPosCallback(gfx.window(), mouse_callback);
   glfwSetKeyCallback(gfx.window(), my_key_callback);
 
-  Shader* pass = (new Shader())
+  Shader* pos_shader = (new Shader())
+    ->vertex("simple_vert.glsl")
+    ->fragment("pos_frag.glsl")
+    -> build();
+
+  Shader* norm_shader = (new Shader())
+    ->vertex("simple_vert.glsl")
+    ->fragment("norm_frag.glsl")
+    ->build();
+
+  Shader* shexp_shader = (new Shader())
     ->vertex("simple_vert.glsl")
     ->fragment("sh_frag.glsl")
+    ->build();
+
+  Shader* main_shader = (new Shader())
+    ->vertex("simple_vert.glsl")
+    ->fragment("main_frag.glsl")
     ->build();
 
   Shader* skybox = (new Shader())
     ->vertex("skybox_vert.glsl")
     ->fragment("skybox_frag.glsl")
     ->build();
+
+  Framebuffer pos_buffer(256,256);
+  pos_buffer.build();
+  Framebuffer norm_buffer(256,256);
+  norm_buffer.build();
+  Framebuffer shexp_buffer(256,256);
+  shexp_buffer.build();
 
   Sphere sph;
   sph.build();
@@ -515,20 +538,21 @@ int main(int argc, char** argv)
   Transform plane_transform(vec3(0,0,0),quat(1,0,0,0),vec3(200));
 
   float x = 0.0f;
+  float far = 1000.0f;
   int width, height;
   float aspect;
   mat4 projection;
 
-  pass->use();
-  pass->updateInt("sh_lut", 0);
-  pass->updateInt("a_lut", 1);
-  pass->updateInt("b_lut", 2);
-  pass->updateInt("len_lut", 3);
-  pass->updateInt("h_maps", 4);
-  pass->updateInt("radiuses", 5);
-  pass->updateInt("positions", 6);
-  pass->updateInt("n_spheres", num_spheres);
-  pass->updateFloat("max_zh_len", MAX_ZH_LENGTH);
+  shexp_shader->use();
+  shexp_shader->updateInt("sh_lut", 0);
+  shexp_shader->updateInt("a_lut", 1);
+  shexp_shader->updateInt("b_lut", 2);
+  shexp_shader->updateInt("len_lut", 3);
+  shexp_shader->updateInt("h_maps", 4);
+  shexp_shader->updateInt("radiuses", 5);
+  shexp_shader->updateInt("positions", 6);
+  shexp_shader->updateInt("n_spheres", num_spheres);
+  shexp_shader->updateFloat("max_zh_len", MAX_ZH_LENGTH);
 
   skybox->use();
   skybox->updateInt("map", 42);
@@ -541,7 +565,7 @@ int main(int argc, char** argv)
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
     aspect = (float)width/(float)height;
-    projection = infinitePerspective(45.0f, aspect, 0.1f);
+    projection = perspective(45.0f, aspect, 0.5f, far);
 
     if (!paused)
       x += 0.01f;
@@ -557,9 +581,9 @@ int main(int argc, char** argv)
     sky.draw();
     glDepthMask(GL_TRUE);
 
-    pass->use();
-    pass->updateMat4("view", camera.getView());
-    pass->updateMat4("projection", projection);
+    norm_shader->use();
+    norm_shader->updateMat4("view", camera.getView());
+    norm_shader->updateMat4("projection", projection);
 
     vec3 v = vec3(0,34+10*sin(x), 0);
     update_sphere(0, v, 24.f, positions_data, radiuses_data);
@@ -590,13 +614,13 @@ int main(int argc, char** argv)
 
     for (int i = 0; i < num_spheres; i++)
     {
-      pass->updateMat4("world", transforms[i].world());
-      pass->updateVec3("color", colors[i]);
+      norm_shader->updateMat4("world", transforms[i].world());
+      norm_shader->updateVec3("color", colors[i]);
       sph.draw();
     }
 
-    pass->updateMat4("world", plane_transform.world());
-    pass->updateVec3("color", vec3(1,1,1));
+    norm_shader->updateMat4("world", plane_transform.world());
+    norm_shader->updateVec3("color", vec3(1,1,1));
     pln.draw();
 
     glfwSwapBuffers(gfx.window());
@@ -605,8 +629,18 @@ int main(int argc, char** argv)
 
   sph.destroy();
   pln.destroy();
-  pass->destroy();
-  delete pass;
+
+  shexp_shader->destroy();
+  skybox->destroy();
+  pos_shader->destroy();
+  norm_shader->destroy();
+  main_shader->destroy();
+  delete shexp_shader;
+  delete skybox;
+  delete pos_shader;
+  delete norm_shader;
+  delete main_shader;
+
   gfx.cleanup();
 
   return 0;

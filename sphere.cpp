@@ -31,13 +31,15 @@ build_impl(float_list &vertices, uint_list &indices)
               y = lat_sin,
               z = lat_cos * lng_sin;
 
-      vertices.push_back(x);
-      vertices.push_back(y);
-      vertices.push_back(z);
+      GLfloat len = sqrt(x*x+y*y+z*z);
 
       vertices.push_back(x);
       vertices.push_back(y);
       vertices.push_back(z);
+
+      vertices.push_back(x/len);
+      vertices.push_back(y/len);
+      vertices.push_back(z/len);
     }
   }
 

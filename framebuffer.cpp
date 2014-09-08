@@ -1,6 +1,6 @@
 #include "framebuffer.h"
 
-#include "iostream"
+#include <iostream>
 
 Framebuffer::
 Framebuffer(GLsizei width, GLsizei height, bool depth_use_texture)
@@ -90,4 +90,11 @@ bind_to_texture(GLenum att, GLenum textgt, GLint tex)
   bind();
   glFramebufferTexture2D(GL_FRAMEBUFFER, att, textgt, tex, 0);
   unbind();
+}
+
+void Framebuffer::
+destroy()
+{
+  unbind();
+  glDeleteFramebuffers(1, &_framebuffer);
 }

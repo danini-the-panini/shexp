@@ -32,6 +32,7 @@ using glm::mat4;
 using glm::mat4_cast;
 using glm::normalize;
 using glm::ortho;
+using glm::perspective;
 using glm::precision;
 using glm::quat;
 using glm::rotate;

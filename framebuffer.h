@@ -15,6 +15,7 @@ public:
   static void unbind();
   void use();
   void bind_to_texture(GLenum, GLenum, GLint);
+  void destroy();
 
 protected:
   GLsizei _width, _height;
