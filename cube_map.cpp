@@ -12,7 +12,8 @@ CubeMap::
 }
 
 void CubeMap::
-load_cube(float **data, GLsizei width, GLsizei height, GLint internalFormat, GLenum format, GLenum type)
+load_cube(float **data, GLsizei size,
+    GLint internalFormat, GLenum format, GLenum type)
 {
   bind();
 
@@ -45,9 +46,7 @@ load_cube(float **data, GLsizei width, GLsizei height, GLint internalFormat, GLe
   for (int i = 0; i < 6; i++)
   {
       glTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X+i, 0, internalFormat,
-              width, height, 0, format,
-              type,
-              data[i]);
+              size, 0, format, type, data[i]);
   }
 }
 

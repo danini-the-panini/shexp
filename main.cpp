@@ -226,7 +226,7 @@ CubeMap gen_cube_map(const GLsizei size, spherical_function fn,
 
   CubeMap map;
   map.build();
-  map.load_cube(data, size, size, internalFormat, format, type);
+  map.load_cube(data, size, internalFormat, format, type);
 
   for (int i = 0; i < 6; i++)
     delete [] data[i];
@@ -254,7 +254,7 @@ void gen_sh_cube_maps(const GLsizei size, spherical_sh_function fn,
   {
     glActiveTexture(GL_TEXTURE0+tex_offset+i);
     result[i].build();
-    result[i].load_cube(data[i], size, size,
+    result[i].load_cube(data[i], size,
         internalFormat, format, type);
   }
 

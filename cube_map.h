@@ -7,9 +7,10 @@ class CubeMap : public Texture
 {
 public:
   CubeMap();
-  ~CubeMap();
+  virtual ~CubeMap();
 
-  virtual void load_cube(float **, GLsizei, GLsizei, GLint internalFormat, GLenum format, GLenum type);
+  virtual void load_cube(float **, GLsizei, GLint internalFormat,
+      GLenum format, GLenum type);
   virtual void build_impl();
 
 protected:
