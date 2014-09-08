@@ -3,7 +3,6 @@
 
 layout (location = 0) out vec4 out_color;
 
-const int N = 1+(16*4);
 const int N_BANDS = 4;
 const int N_COEFFS = N_BANDS*N_BANDS;
 
@@ -11,12 +10,27 @@ in vec3 v_position;
 in vec3 v_normal;
 
 uniform vec3 color;
-uniform float radiuses[N];
-uniform vec3 positions[N];
+uniform int n_spheres;
+uniform sampler1D radiuses;
+uniform sampler1DArray positions;
 
 uniform float max_zh_len;
 uniform sampler2D sh_lut, a_lut, b_lut, len_lut;
 uniform samplerCubeArray h_maps;
+
+vec3 sphere_position(int i)
+{
+  return vec3(
+        texelFetch(positions, ivec2(i,0), 0).r,
+        texelFetch(positions, ivec2(i,1), 0).r,
+        texelFetch(positions, ivec2(i,2), 0).r
+      );
+}
+
+float sphere_radius(int i)
+{
+  return texelFetch(radiuses, i, 0).r;
+}
 
 float[N_COEFFS] window(float[N_COEFFS] c)
 {
@@ -164,10 +178,10 @@ void main()
   {
     f[i] = 0;
   }
-  for (int i = 0; i < N; i++)
+  for (int i = 0; i < n_spheres; i++)
   {
-    vec3 v = positions[i] - v_position;
-    float[N_COEFFS] fi = get_coeff(v, radiuses[i]);
+    vec3 v = sphere_position(i) - v_position;
+    float[N_COEFFS] fi = get_coeff(v, sphere_radius(i));
     for (int j = 0; j < N_COEFFS; j++)
     {
       f[j] += fi[j];

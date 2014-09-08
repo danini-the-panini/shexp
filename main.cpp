@@ -13,6 +13,8 @@
 #include "texture2d.h"
 #include "cube_map.h"
 #include "cube_map_array.h"
+#include "texture1d.h"
+#include "texture1d_array.h"
 #include "green.h"
 
 using namespace std;
@@ -288,6 +290,26 @@ float lerp(float a, float b, float u)
   return a*(1-u) + b*u;
 }
 
+const int MAX_SPHERES = 256;
+
+void update_sphere(int i, vec3 position, float radius,
+    float *positions, float *radiuses)
+{
+  radiuses[i] = radius;
+  positions[i] = position.x;
+  positions[i+MAX_SPHERES] = position.y;
+  positions[i+2*MAX_SPHERES] = position.z;
+}
+
+vec3 sphere_position(int i, float *positions)
+{
+  return vec3(
+        positions[i],
+        positions[i+MAX_SPHERES],
+        positions[i+2*MAX_SPHERES]
+      );
+}
+
 int main(int argc, char** argv)
 {
   GFXBoilerplate gfx;
@@ -405,11 +427,33 @@ int main(int argc, char** argv)
 
   cout << "Loading H map ... " << endl;
   glActiveTexture(GL_TEXTURE0+(tex_offset++));
-  CubeMapArray h_map_array = gen_sh_cube_map_array(H_MAP_SIZE, h_map_function, GL_R32F, GL_RED, GL_FLOAT);
+  CubeMapArray h_map_array = gen_sh_cube_map_array(H_MAP_SIZE, h_map_function,
+      GL_R32F, GL_RED, GL_FLOAT);
   cout << "done." << endl;
 
   delete [] l_coeff;
   delete [] h_coeff;
+
+
+  ///////////////// MAKE SPHERE TEXTURE ////////////////
+
+  int radiuses_slot = tex_offset++;
+  int positions_slot = tex_offset++;
+
+  float *radiuses_data = new float[MAX_SPHERES];
+  float *positions_data = new float[MAX_SPHERES*3];
+
+  glActiveTexture(GL_TEXTURE0+radiuses_slot);
+  Texture1d radiuses;
+  radiuses.build();
+  radiuses.load_tex(radiuses_data, MAX_SPHERES,
+      GL_R32F, GL_RED, GL_FLOAT);
+
+  glActiveTexture(GL_TEXTURE0+positions_slot);
+  Texture1dArray positions;
+  positions.build();
+  positions.load_tex(positions_data, MAX_SPHERES, 3,
+      GL_R32F, GL_RED, GL_FLOAT);
 
   ///////////////// DO THE OPENGL THING ////////////////
 
@@ -438,46 +482,34 @@ int main(int argc, char** argv)
   NDCQuad sky;
   sky.build();
 
-  pass->use();
-  pass->updateInt("sh_lut", 0);
-  pass->updateInt("a_lut", 1);
-  pass->updateInt("b_lut", 2);
-  pass->updateInt("len_lut", 3);
-  pass->updateInt("h_maps", 4);
-  pass->updateFloat("max_zh_len", MAX_ZH_LENGTH);
-
-  skybox->use();
-  skybox->updateInt("map", 42);
-
-  vector<vec3> sphere_positions;
-  vector<GLfloat> sphere_radiuses;
-  vector<vec3> colors;
-
-  sphere_positions.push_back(vec3(0,24,0));
-  sphere_radiuses.push_back(24.0f);
-  colors.push_back(vec3(0,1,1));
-
   const GLuint levels = 4;
   const GLuint segments = 16;
+  int num_spheres = 1+(segments*levels);
+  vector<vec3> colors;
+
+  update_sphere(0, vec3(0,24,0), 24.f, positions_data, radiuses_data);
+  colors.push_back(vec3(0,1,1));
+
   const GLfloat rad_per_lng = (2.f*(GLfloat)M_PI) / (GLfloat)segments;
   for (int j = 0; j < levels; j++)
   {
     for (int i = 0; i < segments; i++)
     {
-      sphere_positions.push_back(vec3(
-            50.0 * cos(i * rad_per_lng),
-            6.0+(12.0*j),
-            50.0 * sin(i * rad_per_lng)
-            ));
-      sphere_radiuses.push_back(6.0f);
+      update_sphere(1+j*segments+i, vec3(
+              50.0 * cos(i * rad_per_lng),
+              6.0+(12.0*j),
+              50.0 * sin(i * rad_per_lng)
+            ), 6.f,
+          positions_data, radiuses_data);
       colors.push_back(vec3(1,0,1));
     }
   }
 
   vector<Transform> transforms;
-  for (int i = 0; i < sphere_positions.size(); i++)
+  for (int i = 0; i < num_spheres; i++)
   {
-    transforms.push_back(Transform(sphere_positions[i], quat(1,0,0,0),vec3(sphere_radiuses[i])));
+    transforms.push_back(Transform(sphere_position(i,positions_data), quat(1,0,0,0),
+          vec3(radiuses_data[i])));
   }
 
   Transform plane_transform(vec3(0,0,0),quat(1,0,0,0),vec3(200));
@@ -486,6 +518,20 @@ int main(int argc, char** argv)
   int width, height;
   float aspect;
   mat4 projection;
+
+  pass->use();
+  pass->updateInt("sh_lut", 0);
+  pass->updateInt("a_lut", 1);
+  pass->updateInt("b_lut", 2);
+  pass->updateInt("len_lut", 3);
+  pass->updateInt("h_maps", 4);
+  pass->updateInt("radiuses", 5);
+  pass->updateInt("positions", 6);
+  pass->updateInt("n_spheres", num_spheres);
+  pass->updateFloat("max_zh_len", MAX_ZH_LENGTH);
+
+  skybox->use();
+  skybox->updateInt("map", 42);
 
   glEnable(GL_DEPTH_TEST);
   while (!glfwWindowShouldClose(gfx.window()))
@@ -515,27 +561,34 @@ int main(int argc, char** argv)
     pass->updateMat4("view", camera.getView());
     pass->updateMat4("projection", projection);
 
-    sphere_positions[0] = vec3(0,34+10*sin(x),0);
-    transforms[0].set_translation(sphere_positions[0]);
+    vec3 v = vec3(0,34+10*sin(x), 0);
+    update_sphere(0, v, 24.f, positions_data, radiuses_data);
+    transforms[0].set_translation(v);
 
     for (int j = 0; j < levels; j++)
     {
       GLfloat sx = (GLfloat)sin(x*2+(M_PI*0.25f*j));
       for (int i = 0; i < segments; i++)
       {
-        sphere_positions[i+1+segments*j] = vec3(
+        v = vec3(
             (50.0+20*sx) * cos(i * rad_per_lng + x*(0.1*j)),
             6.0+(12.0*j),
             (50.0+20*sx) * sin(i * rad_per_lng + x*(0.1*j))
           );
-        transforms[i+1+segments*j].set_translation(sphere_positions[i+1+segments*j]);
+        update_sphere(1+j*segments+i, v, 6.f,
+            positions_data, radiuses_data);
+        transforms[i+1+segments*j].set_translation(v);
       }
     }
 
-    pass->updateFloatArray("radiuses", sphere_radiuses.data(), sphere_radiuses.size());
-    pass->updateVec3Array("positions", sphere_positions.data(), sphere_positions.size());
+    glActiveTexture(GL_TEXTURE0+radiuses_slot);
+    radiuses.load_tex(radiuses_data, MAX_SPHERES,
+        GL_R32F, GL_RED, GL_FLOAT);
+    glActiveTexture(GL_TEXTURE0+positions_slot);
+    positions.load_tex(positions_data, MAX_SPHERES, 3,
+        GL_R32F, GL_RED, GL_FLOAT);
 
-    for (int i = 0; i < sphere_positions.size(); i++)
+    for (int i = 0; i < num_spheres; i++)
     {
       pass->updateMat4("world", transforms[i].world());
       pass->updateVec3("color", colors[i]);
