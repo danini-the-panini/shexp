@@ -1,12 +1,12 @@
 #version 440
 
-in vec3 position;
-in vec3 normal;
+layout (location=1) in vec3 position;
 
-out vec3 g_normal;
+out vec3 v_position;
+out vec3 v_normal;
 
 void main()
 {
-    g_normal = normal;
-    gl_Position = vec4(position,1);
+    v_position = position;
+    gl_Position = vec4(position,1.0f);
 }

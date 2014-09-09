@@ -16,6 +16,7 @@
 #include "texture1d.h"
 #include "texture1d_array.h"
 #include "texture2d.h"
+#include "texture2d_array.h"
 #include "transform.h"
 #include "green.h"
 #include "wavefront_mesh.h"
@@ -325,15 +326,18 @@ void draw_scene(Shader* shader, WorldObject** objects, GLsizei n_objects)
 }
 
 void splat_spheres(Shader* shader, float *positions, float *radiuses,
-    GLsizei num_spheres, Sphere *sphere)
+    GLsizei num_spheres, float oracle_factor, Mesh *mesh)
 {
   shader->use();
 
   for (int i = 0; i < num_spheres; i++)
   {
-    shader->updateMat4("world", scale(translate(mat4(1),
-            sphere_position(i, positions)), vec3(radiuses[i])));
-    sphere->draw();
+    vec3 position = sphere_position(i, positions);
+    shader->updateMat4("world", scale(translate(mat4(1), position),
+          vec3(radiuses[i]*oracle_factor)));
+    shader->updateFloat("proxy_radius", radiuses[i]);
+    shader->updateVec3("proxy_position", position);
+    mesh->draw();
   }
 }
 
@@ -479,25 +483,10 @@ int main(int argc, char** argv)
   delete [] h_coeff;
 
 
-  ///////////////// MAKE SPHERE TEXTURE ////////////////
-
-  int radiuses_slot = tex_offset++;
-  int positions_slot = tex_offset++;
+  ///////////////// MAKE SPHERE ... DATA? ////////////////
 
   float *radiuses_data = new float[MAX_SPHERES];
   float *positions_data = new float[MAX_SPHERES*3];
-
-  glActiveTexture(GL_TEXTURE0+radiuses_slot);
-  Texture1d radiuses;
-  radiuses.build();
-  radiuses.load_tex(radiuses_data, MAX_SPHERES,
-      GL_R32F, GL_RED, GL_FLOAT);
-
-  glActiveTexture(GL_TEXTURE0+positions_slot);
-  Texture1dArray positions;
-  positions.build();
-  positions.load_tex(positions_data, MAX_SPHERES, 3,
-      GL_R32F, GL_RED, GL_FLOAT);
 
   ///////////////// DO THE OPENGL THING ////////////////
 
@@ -509,12 +498,12 @@ int main(int argc, char** argv)
     ->fragment("pos_frag.glsl")
     -> build();
 
-  Shader* norm_shader = (new Shader())
-    ->vertex("simple_vert.glsl")
-    ->fragment("norm_frag.glsl")
+  Shader* shexp_shader = (new Shader())
+    ->vertex("pass_vert.glsl")
+    ->fragment("shexp_frag.glsl")
     ->build();
 
-  Shader* shexp_shader = (new Shader())
+  Shader* sh_shader = (new Shader())
     ->vertex("simple_vert.glsl")
     ->fragment("sh_frag.glsl")
     ->build();
@@ -524,17 +513,65 @@ int main(int argc, char** argv)
     ->fragment("main_frag.glsl")
     ->build();
 
+  Shader* pp_shader = (new Shader())
+    ->vertex("pass_vert.glsl")
+    ->fragment("pp_pass.glsl")
+    ->build();
+
   Shader* skybox = (new Shader())
     ->vertex("skybox_vert.glsl")
     ->fragment("skybox_frag.glsl")
     ->build();
 
-  Framebuffer pos_buffer(256,256);
+  GLsizei buf_width = 320;
+  GLsizei buf_height = 240;
+
+  glActiveTexture(GL_TEXTURE0+33);
+  Texture2d pos_texture;
+  pos_texture.build();
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+  pos_texture.load_tex(NULL, buf_width, buf_height,
+      GL_RGB32F, GL_RGB, GL_FLOAT);
+
+  glActiveTexture(GL_TEXTURE0+34);
+  Texture2d norm_texture;
+  norm_texture.build();
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+  norm_texture.load_tex(NULL, buf_width, buf_height,
+      GL_RGB32F, GL_RGB, GL_FLOAT);
+
+  Framebuffer pos_buffer(buf_width,buf_height);
   pos_buffer.build();
-  Framebuffer norm_buffer(256,256);
-  norm_buffer.build();
-  Framebuffer shexp_buffer(256,256);
+
+  pos_buffer.bind_to_texture(GL_COLOR_ATTACHMENT0,
+      pos_texture.handle());
+  pos_buffer.bind_to_texture(GL_COLOR_ATTACHMENT1,
+      norm_texture.handle());
+
+  glActiveTexture(GL_TEXTURE0+35);
+  Texture2dArray sh_texture;
+  sh_texture.build();
+  sh_texture.load_tex(NULL, buf_width, buf_height, N_COEFFS/4,
+      GL_RGBA32F, GL_RGBA, GL_FLOAT);
+  Framebuffer sh_buffer(buf_width,buf_height);
+  sh_buffer.build();
+  for (int i = 0; i < N_COEFFS/4; i++)
+  {
+    sh_buffer.bind_to_texture_layer(GL_COLOR_ATTACHMENT0+i,
+        sh_texture.handle(), i);
+  }
+
+  glActiveTexture(GL_TEXTURE0+36);
+  Texture2d shexp_texture;
+  shexp_texture.build();
+  shexp_texture.load_tex(NULL, buf_width, buf_height,
+      GL_R32F, GL_RED, GL_FLOAT);
+  Framebuffer shexp_buffer(buf_width,buf_height);
   shexp_buffer.build();
+  shexp_buffer.bind_to_texture(GL_COLOR_ATTACHMENT0,
+      shexp_texture.handle());
 
   Sphere sph;
   sph.build();
@@ -542,8 +579,8 @@ int main(int argc, char** argv)
   glActiveTexture(GL_TEXTURE0+42);
   CubeMap skymap = gen_cube_map(256, sky_function, GL_R32F, GL_RED, GL_FLOAT);
 
-  NDCQuad sky;
-  sky.build();
+  NDCQuad all_the_pixels;
+  all_the_pixels.build();
 
   int num_spheres = load_spheres("Humanoid_0000.vsp", positions_data,
       radiuses_data);
@@ -563,40 +600,91 @@ int main(int argc, char** argv)
   objects[0] = &pln_obj;
   objects[1] = &dude_obj;
 
-  float x = 0.0f;
+  float oracle_factor = 15;
   float far = 1000.0f;
   int width, height;
   float aspect;
   mat4 projection;
 
+  sh_shader->use();
+  sh_shader->updateInt("screen_width", buf_width);
+  sh_shader->updateInt("screen_height", buf_height);
+  sh_shader->updateInt("position", 33);
+  sh_shader->updateFloat("oracle_factor", oracle_factor);
+  sh_shader->updateInt("sh_lut", 0);
+
   shexp_shader->use();
-  shexp_shader->updateInt("sh_lut", 0);
+  shexp_shader->updateInt("screen_width", buf_width);
+  shexp_shader->updateInt("screen_height", buf_height);
   shexp_shader->updateInt("a_lut", 1);
   shexp_shader->updateInt("b_lut", 2);
   shexp_shader->updateInt("len_lut", 3);
   shexp_shader->updateInt("h_maps", 4);
-  shexp_shader->updateInt("radiuses", 5);
-  shexp_shader->updateInt("positions", 6);
-  shexp_shader->updateInt("n_spheres", num_spheres);
   shexp_shader->updateFloat("max_zh_len", MAX_ZH_LENGTH);
+  shexp_shader->updateInt("normal", 34);
+  shexp_shader->updateInt("shlogs", 35);
+
+  main_shader->use();
+  main_shader->updateInt("shexps", 36);
+  main_shader->updateInt("screen_width", buf_width);
+  main_shader->updateInt("screen_height", buf_height);
 
   skybox->use();
   skybox->updateInt("map", 42);
+
+  pp_shader->use();
+  pp_shader->updateInt("tex1", 35);
+  pp_shader->updateInt("tex2", 36);
 
   glEnable(GL_DEPTH_TEST);
   while (!glfwWindowShouldClose(gfx.window()))
   {
     glfwGetFramebufferSize(gfx.window(), &width, &height);
-    glViewport(0, 0, width, height);
-    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
     aspect = (float)width/(float)height;
     projection = perspective(45.0f, aspect, 0.5f, far);
 
-    if (!paused)
-      x += 0.01f;
-
     handleInput(gfx.window());
+
+
+    pos_buffer.use(2);
+
+    pos_shader->use();
+    pos_shader->updateMat4("view", camera.getView());
+    pos_shader->updateMat4("projection", projection);
+
+    draw_scene(pos_shader, objects, n_objects);
+
+
+    sh_buffer.use(N_COEFFS/4);
+
+    sh_shader->use();
+    sh_shader->updateMat4("view", camera.getView());
+    sh_shader->updateMat4("projection", projection);
+
+    glDisable(GL_DEPTH_TEST);
+    glEnable(GL_BLEND);
+    glBlendEquation(GL_FUNC_ADD);
+    glBlendFunc(GL_ONE, GL_ONE);
+
+    splat_spheres(sh_shader, positions_data, radiuses_data, num_spheres,
+        oracle_factor, &sph);
+
+    glDisable(GL_BLEND);
+    glEnable(GL_DEPTH_TEST);
+
+
+    shexp_buffer.use(1);
+
+    shexp_shader->use();
+
+    all_the_pixels.draw();
+
+
+    Framebuffer::unbind();
+
+    glViewport(0, 0, width, height);
+    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
     skybox->use();
     skybox->updateFloat("aspect", aspect);
@@ -604,24 +692,22 @@ int main(int argc, char** argv)
     skybox->updateMat4("projection", projection);
 
     glDepthMask(GL_FALSE);
-    sky.draw();
+    all_the_pixels.draw();
     glDepthMask(GL_TRUE);
 
-    norm_shader->use();
-    norm_shader->updateMat4("view", camera.getView());
-    norm_shader->updateMat4("projection", projection);
+    main_shader->use();
+    main_shader->updateInt("screen_width", width);
+    main_shader->updateInt("screen_height", height);
+    main_shader->updateMat4("view", camera.getView());
+    main_shader->updateMat4("projection", projection);
 
-    glActiveTexture(GL_TEXTURE0+radiuses_slot);
-    radiuses.load_tex(radiuses_data, MAX_SPHERES,
-        GL_R32F, GL_RED, GL_FLOAT);
-    glActiveTexture(GL_TEXTURE0+positions_slot);
-    positions.load_tex(positions_data, MAX_SPHERES, 3,
-        GL_R32F, GL_RED, GL_FLOAT);
+    draw_scene(main_shader, objects, n_objects);
 
-    splat_spheres(norm_shader, positions_data, radiuses_data, num_spheres,
-        &sph);
+    //pp_shader->use();
+    //pp_shader->updateInt("screen_width", width);
+    //pp_shader->updateInt("screen_height", height);
 
-    draw_scene(norm_shader, objects, n_objects);
+    //all_the_pixels.draw();
 
     glfwSwapBuffers(gfx.window());
     glfwPollEvents();
@@ -631,15 +717,15 @@ int main(int argc, char** argv)
   pln.destroy();
   dude.destroy();
 
+  sh_shader->destroy();
   shexp_shader->destroy();
   skybox->destroy();
   pos_shader->destroy();
-  norm_shader->destroy();
   main_shader->destroy();
+  delete sh_shader;
   delete shexp_shader;
   delete skybox;
   delete pos_shader;
-  delete norm_shader;
   delete main_shader;
 
   delete [] positions_data;

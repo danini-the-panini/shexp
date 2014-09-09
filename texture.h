@@ -8,10 +8,11 @@ class Texture
 public:
   Texture(GLenum);
   virtual ~Texture();
-  virtual void build();
-  virtual void destroy();
-  virtual void bind();
-  virtual void use(GLenum);
+  void build();
+  void destroy();
+  void bind();
+  void use(GLenum);
+  GLuint handle();
 
   virtual void build_impl() = 0;
 

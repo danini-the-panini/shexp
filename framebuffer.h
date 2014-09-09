@@ -13,8 +13,10 @@ public:
 
   void bind();
   static void unbind();
-  void use();
-  void bind_to_texture(GLenum, GLenum, GLint);
+  void use(GLenum[], GLsizei);
+  void use(const GLsizei n=1);
+  void bind_to_texture(GLenum, GLuint);
+  void bind_to_texture_layer(GLenum, GLuint, GLint);
   void destroy();
 
 protected:

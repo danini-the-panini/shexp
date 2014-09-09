@@ -39,3 +39,9 @@ use(GLenum slot)
   glActiveTexture(slot);
   bind();
 }
+
+GLuint Texture::
+handle()
+{
+  return _texture;
+}

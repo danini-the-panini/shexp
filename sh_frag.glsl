@@ -1,36 +1,24 @@
 #version 440
 #define PI (3.1415926535897932384626433832795)
 
-layout (location = 0) out vec4 out_color;
+layout (location = 0) out vec4 sh0_3;
+layout (location = 1) out vec4 sh4_7;
+layout (location = 2) out vec4 sh8_11;
+layout (location = 3) out vec4 sh12_15;
 
 const int N_BANDS = 4;
 const int N_COEFFS = N_BANDS*N_BANDS;
 
-in vec3 v_position;
-in vec3 v_normal;
+uniform sampler2D position;
 
-uniform vec3 color;
-uniform int n_spheres;
-uniform sampler1D radiuses;
-uniform sampler1DArray positions;
+uniform int screen_width;
+uniform int screen_height;
 
-uniform float max_zh_len;
-uniform sampler2D sh_lut, a_lut, b_lut, len_lut;
-uniform samplerCubeArray h_maps;
+uniform float proxy_radius;
+uniform vec3 proxy_position;
+uniform float oracle_factor;
 
-vec3 sphere_position(int i)
-{
-  return vec3(
-        texelFetch(positions, ivec2(i,0), 0).r,
-        texelFetch(positions, ivec2(i,1), 0).r,
-        texelFetch(positions, ivec2(i,2), 0).r
-      );
-}
-
-float sphere_radius(int i)
-{
-  return texelFetch(radiuses, i, 0).r;
-}
+uniform sampler2D sh_lut;
 
 float[N_COEFFS] window(float[N_COEFFS] c)
 {
@@ -45,18 +33,6 @@ float[N_COEFFS] window(float[N_COEFFS] c)
       result[i] = c[i] * a;
     }
   }
-  return result;
-}
-
-float[N_COEFFS] lh(vec3 v)
-{
-  float[N_COEFFS] result;
-
-  for(int i = 0; i < N_COEFFS; i++)
-  {
-    result[i] = texture(h_maps, vec4(v,float(i))).r;
-  }
-
   return result;
 }
 
@@ -107,52 +83,6 @@ float[N_COEFFS] rotate_to(float[N_COEFFS] sh, vec3 v)
   );
 }
 
-float shdot(float[N_COEFFS] a, float[N_COEFFS] b)
-{
-  float sum = 0;
-  for (int i = 0; i < N_COEFFS; i++)
-  {
-    sum += a[i] * b[i];
-  }
-  return sum;
-}
-
-float shlen(float[N_COEFFS] x)
-{
-  float l = 0;
-  for (int i = 0; i < N_COEFFS; i++)
-  {
-    l += x[i]*x[i];
-  }
-  return sqrt(l);
-}
-
-float unlerp(float a, float b, float x)
-{
-  return (x-a)/(b-a);
-}
-
-float[N_COEFFS] shexp(float[N_COEFFS] f)
-{
-  float f_len = shlen(f);
-
-  float[N_COEFFS] g;
-
-  float e = exp(f[0]/sqrt(4.0/PI));
-
-  float u = texture(len_lut, vec2(0.5,clamp(f_len/max_zh_len,0,1))).r;
-  float a = texture(a_lut, vec2(0.5, u)).r;
-  float b = texture(b_lut, vec2(0.5, u)).r;
-
-  g[0] = a*sqrt(4.0*PI)*e;
-  for (int i = 1; i < N_COEFFS; i++)
-  {
-    g[i] = b*f[i]*e;
-  }
-
-  return g;
-}
-
 float angular_radius(float d, float r)
 {
   return asin(r/d);
@@ -173,22 +103,21 @@ float[N_COEFFS] get_coeff(vec3 v, float radius)
 
 void main()
 {
-  float[N_COEFFS] f;
-  for (int i = 0; i < N_COEFFS; i++)
-  {
-    f[i] = 0;
-  }
-  for (int i = 0; i < n_spheres; i++)
-  {
-    vec3 v = sphere_position(i) - v_position;
-    float[N_COEFFS] fi = get_coeff(v, sphere_radius(i));
-    for (int j = 0; j < N_COEFFS; j++)
-    {
-      f[j] += fi[j];
-    }
-  }
-  float ip = shdot(lh(v_normal), shexp(f));
+  vec2 screen = vec2( gl_FragCoord.x / float(screen_width),
+      gl_FragCoord.y / float(screen_height));
 
-  out_color = vec4(color * ip, 1);
+  vec3 p_position = texture(position, screen).xyz;
+
+  vec3 v = proxy_position - p_position;
+
+  if (length(v) > proxy_radius*oracle_factor)
+    discard;
+
+  float[N_COEFFS] f = get_coeff(v, proxy_radius);
+
+  sh0_3 = vec4(f[0], f[1], f[2], f[3]);
+  sh4_7 = vec4(f[4], f[5], f[6], f[7]);
+  sh8_11 = vec4(f[8], f[9], f[10], f[11]);
+  sh12_15 = vec4(f[12], f[13], f[14], f[15]);
 }
 

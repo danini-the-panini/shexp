@@ -72,12 +72,22 @@ unbind()
 }
 
 void Framebuffer::
-use()
+use(const GLsizei n)
+{
+  GLenum bufs[n];
+  for (int i = 0; i < n; i++)
+  {
+    bufs[i] = GL_COLOR_ATTACHMENT0+i;
+  }
+  use(bufs, n);
+}
+
+void Framebuffer::
+use(GLenum bufs[], GLsizei n_bufs)
 {
   bind();
 
-  GLenum bufs[] = {GL_COLOR_ATTACHMENT0};
-  glDrawBuffers(1, bufs); // "1" is the size of DrawBuffers
+  glDrawBuffers(n_bufs, bufs); // "1" is the size of DrawBuffers
 
   glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
@@ -85,10 +95,18 @@ use()
 }
 
 void Framebuffer::
-bind_to_texture(GLenum att, GLenum textgt, GLint tex)
+bind_to_texture(GLenum att, GLuint tex)
 {
   bind();
-  glFramebufferTexture2D(GL_FRAMEBUFFER, att, textgt, tex, 0);
+  glFramebufferTexture(GL_FRAMEBUFFER, att, tex, 0);
+  unbind();
+}
+
+void Framebuffer::
+bind_to_texture_layer(GLenum att, GLuint tex, GLint layer)
+{
+  bind();
+  glFramebufferTextureLayer(GL_FRAMEBUFFER, att, tex, 0, layer);
   unbind();
 }
 

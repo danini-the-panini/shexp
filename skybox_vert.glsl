@@ -1,4 +1,5 @@
-#version 420
+#version 440
+
 layout (location=1) in vec3 position;
 
 uniform mat4 projection;

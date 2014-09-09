@@ -7,9 +7,14 @@
 GLuint Shader::
 loadShader(const char* file, GLenum type)
 {
+  cout << "Loading shader " << file << endl;
   GLuint _program = glCreateShader(type);
 
   ifstream in(file);
+  if (!in)
+  {
+    cout << "Failed to load shader " << file << endl;
+  }
   stringstream buffer;
   buffer << in.rdbuf();
   string content(buffer.str());
