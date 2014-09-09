@@ -19,6 +19,7 @@
 #include "transform.h"
 #include "green.h"
 #include "wavefront_mesh.h"
+#include "world_object.h"
 
 using namespace std;
 
@@ -313,6 +314,46 @@ vec3 sphere_position(int i, float *positions)
       );
 }
 
+void draw_scene(Shader* shader, WorldObject** objects, GLsizei n_objects)
+{
+  shader->use();
+
+  for (int i = 0; i < n_objects; i++)
+  {
+    objects[i]->draw(shader);
+  }
+}
+
+void splat_spheres(Shader* shader, float *positions, float *radiuses,
+    GLsizei num_spheres, Sphere *sphere)
+{
+  shader->use();
+
+  for (int i = 0; i < num_spheres; i++)
+  {
+    shader->updateMat4("world", scale(translate(mat4(1),
+            sphere_position(i, positions)), vec3(radiuses[i])));
+    sphere->draw();
+  }
+}
+
+int load_spheres(const char *filename, float *positions, float *radiuses)
+{
+  ifstream in(filename);
+  if (!in) return 0;
+
+  int num_spheres;
+  in >> num_spheres;
+  for (int i = 0; i < num_spheres; i++)
+  {
+    in >> positions[i];
+    in >> positions[i+MAX_SPHERES];
+    in >> positions[i+2*MAX_SPHERES];
+    in >> radiuses[i];
+  }
+  return num_spheres;
+}
+
 int main(int argc, char** argv)
 {
   GFXBoilerplate gfx;
@@ -498,49 +539,29 @@ int main(int argc, char** argv)
   Sphere sph;
   sph.build();
 
-  Plane pln;
-  pln.build();
-
   glActiveTexture(GL_TEXTURE0+42);
   CubeMap skymap = gen_cube_map(256, sky_function, GL_R32F, GL_RED, GL_FLOAT);
 
   NDCQuad sky;
   sky.build();
 
-  const GLuint levels = 4;
-  const GLuint segments = 16;
-  int num_spheres = 1+(segments*levels);
-  vector<vec3> colors;
+  int num_spheres = load_spheres("Humanoid_0000.vsp", positions_data,
+      radiuses_data);
 
-  update_sphere(0, vec3(0,24,0), 24.f, positions_data, radiuses_data);
-  colors.push_back(vec3(0,1,1));
-
-  const GLfloat rad_per_lng = (2.f*(GLfloat)M_PI) / (GLfloat)segments;
-  for (int j = 0; j < levels; j++)
-  {
-    for (int i = 0; i < segments; i++)
-    {
-      update_sphere(1+j*segments+i, vec3(
-              50.0 * cos(i * rad_per_lng),
-              6.0+(12.0*j),
-              50.0 * sin(i * rad_per_lng)
-            ), 6.f,
-          positions_data, radiuses_data);
-      colors.push_back(vec3(1,0,1));
-    }
-  }
-
-  vector<Transform> transforms;
-  for (int i = 0; i < num_spheres; i++)
-  {
-    transforms.push_back(Transform(sphere_position(i,positions_data), quat(1,0,0,0),
-          vec3(radiuses_data[i])));
-  }
-
+  Plane pln;
+  pln.build();
   Transform plane_transform(vec3(0,0,0),quat(1,0,0,0),vec3(1000));
+  WorldObject pln_obj(&pln, &plane_transform);
 
   WavefrontMesh dude("Humanoid_0000.obj");
   dude.build();
+  Transform dude_transform(vec3(0,0,0), quat(1,0,0,0), vec3(1));
+  WorldObject dude_obj(&dude, &dude_transform);
+
+  GLsizei n_objects = 2;
+  WorldObject** objects = new WorldObject*[n_objects];
+  objects[0] = &pln_obj;
+  objects[1] = &dude_obj;
 
   float x = 0.0f;
   float far = 1000.0f;
@@ -590,26 +611,6 @@ int main(int argc, char** argv)
     norm_shader->updateMat4("view", camera.getView());
     norm_shader->updateMat4("projection", projection);
 
-    vec3 v = vec3(0,34+10*sin(x), 0);
-    update_sphere(0, v, 24.f, positions_data, radiuses_data);
-    transforms[0].set_translation(v);
-
-    for (int j = 0; j < levels; j++)
-    {
-      GLfloat sx = (GLfloat)sin(x*2+(M_PI*0.25f*j));
-      for (int i = 0; i < segments; i++)
-      {
-        v = vec3(
-            (50.0+20*sx) * cos(i * rad_per_lng + x*(0.1*j)),
-            6.0+(12.0*j),
-            (50.0+20*sx) * sin(i * rad_per_lng + x*(0.1*j))
-          );
-        update_sphere(1+j*segments+i, v, 6.f,
-            positions_data, radiuses_data);
-        transforms[i+1+segments*j].set_translation(v);
-      }
-    }
-
     glActiveTexture(GL_TEXTURE0+radiuses_slot);
     radiuses.load_tex(radiuses_data, MAX_SPHERES,
         GL_R32F, GL_RED, GL_FLOAT);
@@ -617,20 +618,10 @@ int main(int argc, char** argv)
     positions.load_tex(positions_data, MAX_SPHERES, 3,
         GL_R32F, GL_RED, GL_FLOAT);
 
-    shexp_shader->updateMat4("world", mat4(1)); //scale(mat4(1), vec3(0.01)));
-    shexp_shader->updateVec3("color", vec3(1,1,1));
-    dude.draw();
+    splat_spheres(norm_shader, positions_data, radiuses_data, num_spheres,
+        &sph);
 
-    for (int i = 0; i < num_spheres; i++)
-    {
-      norm_shader->updateMat4("world", transforms[i].world());
-      norm_shader->updateVec3("color", colors[i]);
-      sph.draw();
-    }
-
-    norm_shader->updateMat4("world", plane_transform.world());
-    norm_shader->updateVec3("color", vec3(1,1,1));
-    pln.draw();
+    draw_scene(norm_shader, objects, n_objects);
 
     glfwSwapBuffers(gfx.window());
     glfwPollEvents();
@@ -638,6 +629,7 @@ int main(int argc, char** argv)
 
   sph.destroy();
   pln.destroy();
+  dude.destroy();
 
   shexp_shader->destroy();
   skybox->destroy();
@@ -649,6 +641,10 @@ int main(int argc, char** argv)
   delete pos_shader;
   delete norm_shader;
   delete main_shader;
+
+  delete [] positions_data;
+  delete [] radiuses_data;
+  delete [] objects;
 
   gfx.cleanup();
 
