@@ -14,7 +14,7 @@ void key_callback(GLFWwindow *window, int key, int /*scancode*/, int action, int
 class GFXBoilerplate
 {
 public:
-  GFXBoilerplate();
+  GFXBoilerplate(GLsizei, GLsizei);
   ~GFXBoilerplate();
   void init();
   void cleanup();
@@ -22,6 +22,7 @@ public:
   GLFWwindow * window();
 
 private:
+  GLsizei _width, _height;
   GLFWwindow *_window;
 
   void initGlew();

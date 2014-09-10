@@ -24,6 +24,10 @@
 
 using namespace std;
 
+const GLsizei SCREEN_WIDTH = 640;
+const GLsizei SCREEN_HEIGHT = 480;
+const GLsizei SCALE_DOWN_FACTOR = 2;
+
 typedef OrthoRotMatCamera<float, highp> ORMCamF;
 ORMCamF camera(ORMCamF::vec3_type(0,30,-50));
 
@@ -360,7 +364,7 @@ int load_spheres(const char *filename, float *positions, float *radiuses)
 
 int main(int argc, char** argv)
 {
-  GFXBoilerplate gfx;
+  GFXBoilerplate gfx(SCREEN_WIDTH, SCREEN_HEIGHT);
   gfx.init();
   glEnable(GL_TEXTURE_CUBE_MAP_SEAMLESS);
 
@@ -523,8 +527,8 @@ int main(int argc, char** argv)
     ->fragment("skybox_frag.glsl")
     ->build();
 
-  GLsizei buf_width = 320;
-  GLsizei buf_height = 240;
+  GLsizei buf_width = SCREEN_WIDTH/SCALE_DOWN_FACTOR;
+  GLsizei buf_height = SCREEN_HEIGHT/SCALE_DOWN_FACTOR;
 
   glActiveTexture(GL_TEXTURE0+33);
   Texture2d pos_texture;
@@ -587,7 +591,7 @@ int main(int argc, char** argv)
 
   Plane pln;
   pln.build();
-  Transform plane_transform(vec3(0,0,0),quat(1,0,0,0),vec3(1000));
+  Transform plane_transform(vec3(0,0,0),quat(1,0,0,0),vec3(2000));
   WorldObject pln_obj(&pln, &plane_transform);
 
   WavefrontMesh dude("Humanoid_0000.obj");
@@ -601,7 +605,7 @@ int main(int argc, char** argv)
   objects[1] = &dude_obj;
 
   float oracle_factor = 15;
-  float far = 1000.0f;
+  float far = 2000.0f;
   int width, height;
   float aspect;
   mat4 projection;

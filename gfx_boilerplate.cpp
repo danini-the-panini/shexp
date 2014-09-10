@@ -12,7 +12,8 @@ void key_callback(GLFWwindow *win, int key, int /*scancode*/, int action, int /*
 }
 
 GFXBoilerplate::
-GFXBoilerplate()
+GFXBoilerplate(GLsizei width, GLsizei height)
+  : _width(width), _height(height)
 {
 }
 
@@ -27,7 +28,7 @@ init()
   glfwSetErrorCallback(error_callback);
   initGlfw();
 
-  _window = glfwCreateWindow(640, 480, "SHEXP", NULL, NULL);
+  _window = glfwCreateWindow(_width, _height, "SHEXP", NULL, NULL);
 
   if (!_window)
   {
