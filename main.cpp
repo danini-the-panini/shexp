@@ -610,6 +610,7 @@ int main(int argc, char** argv)
   sh_shader->updateInt("screen_width", buf_width);
   sh_shader->updateInt("screen_height", buf_height);
   sh_shader->updateInt("position", 33);
+  sh_shader->updateInt("normal", 34);
   sh_shader->updateFloat("oracle_factor", oracle_factor);
   sh_shader->updateInt("sh_lut", 0);
 

@@ -10,6 +10,7 @@ const int N_BANDS = 4;
 const int N_COEFFS = N_BANDS*N_BANDS;
 
 uniform sampler2D position;
+uniform sampler2D normal;
 
 uniform int screen_width;
 uniform int screen_height;
@@ -107,13 +108,42 @@ void main()
       gl_FragCoord.y / float(screen_height));
 
   vec3 p_position = texture(position, screen).xyz;
+  vec3 p_normal = texture(normal, screen).xyz;
 
   vec3 v = proxy_position - p_position;
 
-  if (length(v) > proxy_radius*oracle_factor)
+  float v_length = length(v);
+
+  if (v_length > proxy_radius*oracle_factor)
     discard;
 
-  float[N_COEFFS] f = get_coeff(v, proxy_radius);
+  float v_dot_normal = dot(v, p_normal);
+
+  // behind tangent plane
+  if (v_dot_normal < -proxy_radius)
+    discard;
+
+  // straddling and containing
+  if (v_dot_normal < 0 && v_length < proxy_radius)
+    discard;
+
+  vec3 p = proxy_position;
+  float r = proxy_radius;
+
+  // straddling and not containing
+  if (v_dot_normal < 0)
+  {
+    p += p_normal * (r - v_dot_normal)/2;
+    r = (r + v_dot_normal)/2;
+  } else if (v_dot_normal < r)
+  {
+    p += p_normal * (r - v_dot_normal)/2;
+    r -= (r - v_dot_normal)/2;
+  }
+
+  v = p - p_position;
+
+  float[N_COEFFS] f = get_coeff(v, r);
 
   sh0_3 = vec4(f[0], f[1], f[2], f[3]);
   sh4_7 = vec4(f[4], f[5], f[6], f[7]);
