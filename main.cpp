@@ -544,7 +544,7 @@ int main(int argc, char** argv)
   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
   norm_texture.load_tex(NULL, buf_width, buf_height,
-      GL_RGB32F, GL_RGB, GL_FLOAT);
+      GL_RGBA32F, GL_RGBA, GL_FLOAT);
 
   Framebuffer pos_buffer(buf_width,buf_height);
   pos_buffer.build();
@@ -631,8 +631,9 @@ int main(int argc, char** argv)
 
   main_shader->use();
   main_shader->updateInt("shexps", 36);
-  main_shader->updateInt("screen_width", buf_width);
-  main_shader->updateInt("screen_height", buf_height);
+  main_shader->updateInt("normal", 34);
+  main_shader->updateInt("buf_width", buf_width);
+  main_shader->updateInt("buf_height", buf_height);
 
   skybox->use();
   skybox->updateInt("map", 42);
