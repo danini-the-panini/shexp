@@ -24,8 +24,8 @@
 
 using namespace std;
 
-const GLsizei SCREEN_WIDTH = 640;
-const GLsizei SCREEN_HEIGHT = 480;
+const GLsizei SCREEN_WIDTH = 1600;
+const GLsizei SCREEN_HEIGHT = 900;
 const GLsizei SCALE_DOWN_FACTOR = 2;
 
 typedef OrthoRotMatCamera<float, highp> ORMCamF;
@@ -67,12 +67,18 @@ void mouse_callback(GLFWwindow *window, double x, double y)
 }
 
 bool paused = false;
+bool using_bilateral = true;
 void my_key_callback(GLFWwindow *win, int key, int scancode, int action, int mods)
 {
   key_callback(win, key, scancode, action, mods);
 
   if (key == GLFW_KEY_TAB && action == GLFW_PRESS)
     paused = !paused;
+  else if (key == GLFW_KEY_B && action == GLFW_PRESS)
+  {
+    using_bilateral = !using_bilateral;
+    cout << "Bilateral filtering: " << using_bilateral << endl;
+  }
 }
 
 double safe_acos(double x)
@@ -116,7 +122,7 @@ spherical_function clearsky(const double sun_theta, const double sun_phi, const 
     double cos_gamma = cos(gamma);
     double num = (0.91f + 10 * exp(-3 * gamma) + 0.45 * cos_gamma * cos_gamma) * (1 - exp(-0.32f / cos(theta)));
     double denom = (0.91f + 10 * exp(-3 * Z) + 0.45 * cos_Z * cos_Z) * (1 - exp(-0.32f));
-    return max(scale * num / denom, 0.0);
+    return 2 * max(scale * num / denom, 0.0);
   };
 }
 
@@ -517,6 +523,11 @@ int main(int argc, char** argv)
     ->fragment("main_frag.glsl")
     ->build();
 
+  Shader* linear_shader = (new Shader())
+    ->vertex("simple_vert.glsl")
+    ->fragment("linear_frag.glsl")
+    ->build();
+
   Shader* pp_shader = (new Shader())
     ->vertex("pass_vert.glsl")
     ->fragment("pp_pass.glsl")
@@ -546,7 +557,7 @@ int main(int argc, char** argv)
   norm_texture.load_tex(NULL, buf_width, buf_height,
       GL_RGBA32F, GL_RGBA, GL_FLOAT);
 
-  Framebuffer pos_buffer(buf_width,buf_height);
+  Framebuffer pos_buffer(buf_width, buf_height);
   pos_buffer.build();
 
   pos_buffer.bind_to_texture(GL_COLOR_ATTACHMENT0,
@@ -635,6 +646,12 @@ int main(int argc, char** argv)
   main_shader->updateInt("buf_width", buf_width);
   main_shader->updateInt("buf_height", buf_height);
 
+  linear_shader->use();
+  linear_shader->updateInt("shexps", 36);
+  linear_shader->updateInt("normal", 34);
+  linear_shader->updateInt("buf_width", buf_width);
+  linear_shader->updateInt("buf_height", buf_height);
+
   skybox->use();
   skybox->updateInt("map", 42);
 
@@ -701,13 +718,14 @@ int main(int argc, char** argv)
     all_the_pixels.draw();
     glDepthMask(GL_TRUE);
 
-    main_shader->use();
-    main_shader->updateInt("screen_width", width);
-    main_shader->updateInt("screen_height", height);
-    main_shader->updateMat4("view", camera.getView());
-    main_shader->updateMat4("projection", projection);
+    Shader * this_shader = using_bilateral ? main_shader : linear_shader;
+    this_shader->use();
+    this_shader->updateInt("screen_width", width);
+    this_shader->updateInt("screen_height", height);
+    this_shader->updateMat4("view", camera.getView());
+    this_shader->updateMat4("projection", projection);
 
-    draw_scene(main_shader, objects, n_objects);
+    draw_scene(this_shader, objects, n_objects);
 
     //pp_shader->use();
     //pp_shader->updateInt("screen_width", width);
