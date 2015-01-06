@@ -1,4 +1,4 @@
-#version 440
+#version 410
 
 layout (location = 0) out vec3 position;
 layout (location = 1) out vec3 normal;

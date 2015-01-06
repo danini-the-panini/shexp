@@ -1,4 +1,4 @@
-#version 440
+#version 410
 #define PI (3.1415926535897932384626433832795)
 
 layout (location = 0) out vec4 sh0_3;
